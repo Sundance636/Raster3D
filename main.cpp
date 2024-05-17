@@ -79,13 +79,14 @@ void mainLoop(SDL_Renderer *renderer) {
     //tris[0];//
     testTriangle.setTriCount(12);
 
-    
+    camera cam = camera();
+
 
     
     while(!gQuit) {
 
-        gQuit = Input(testTriangle);
-        Draw(renderer,testTriangle);
+        gQuit = Input(testTriangle, cam);
+        Draw(renderer,testTriangle, cam);
 
     }
 
@@ -110,7 +111,7 @@ void filltri(entity testtri) {
 
 }*/
 
-void Draw(SDL_Renderer *renderer,entity testTri) {
+void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     //glDrawPixels(640,480,GL_RGB,GL_FLOAT,fb);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
@@ -119,7 +120,7 @@ void Draw(SDL_Renderer *renderer,entity testTri) {
 
     projection.translateEntity(vec4(0.0f,-100.0f,-600.0f,0.0f));
 
-    camera cam = camera();
+    //camera cam = camera();
 
     for(int i = 0; i < testTri.getTriCount(); i++) {
 
@@ -129,9 +130,9 @@ void Draw(SDL_Renderer *renderer,entity testTri) {
         projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
         projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
 
-        std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
-        std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
-        std::cout << "NDC Point 3: " << projection[0].getP3() << "\n";
+        //std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
+        //std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
+        //std::cout << "NDC Point 3: " << projection[0].getP3() << "\n";
 
 
 
@@ -155,10 +156,10 @@ void Draw(SDL_Renderer *renderer,entity testTri) {
         SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
         SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
 
-        std::cout << "\nTri number: " << i ;
-        std::cout << "\nPoint 1: " << projection[i].getP1() << "\n";
-        std::cout << "Point 2: " << projection[i].getP2() << "\n";
-        std::cout << "Point 3: " << projection[i].getP3() << "\n";
+        //std::cout << "\nTri number: " << i ;
+        //std::cout << "\nPoint 1: " << projection[i].getP1() << "\n";
+        //std::cout << "Point 2: " << projection[i].getP2() << "\n";
+        //std::cout << "Point 3: " << projection[i].getP3() << "\n";
 
     }
 
@@ -170,7 +171,7 @@ void Draw(SDL_Renderer *renderer,entity testTri) {
 
 }
 
-bool Input(entity &test) {
+bool Input(entity &test, camera &cam) {
     SDL_Event e;
 
     while(SDL_PollEvent(&e) != 0) {
@@ -182,14 +183,55 @@ bool Input(entity &test) {
 
             //transforms in terms of world space
             //test.translateEntity(vec4(40,40,40,1));
-            test.rotateEntityY(.04f);
-            test.rotateEntityZ(.01f);
+            //test.rotateEntityY(.04f);
+            //test.rotateEntityZ(.01f);
+            if(e.key.keysym.sym == SDLK_LEFT) {
+                cam.movecam(vec4(1.0,0.0,0.0,0.0));
+            }
+            else if((e.key.keysym.sym == SDLK_RIGHT)) {
+                cam.movecam(vec4(-1.0,0.0,0.0,0.0));
+            }
+            else if((e.key.keysym.sym == SDLK_UP)) {
+                cam.movecam(vec4(0.0,1.0,0.0,0.0));
+            }
+            else if((e.key.keysym.sym == SDLK_DOWN)) {
+                cam.movecam(vec4(0.0,-1.0,0.0,0.0));
+            }
+            else if((e.key.keysym.sym == SDLK_e)) {
+                cam.movecam(vec4(0.0,0.0,3.5,0.0));
+            }
+            else if((e.key.keysym.sym == SDLK_q)) {
+                cam.movecam(vec4(0.0,0.0,-3.5,0.0));
+            }
+            else if((e.key.keysym.sym == SDLK_DOWN)) {
+                cam.movecam(vec4(0.0,-1.0,0.0,0.0));
+            }
+            else if(e.key.keysym.sym == SDLK_d) {
+                cam.rotateLook(0.02f);
+            }
+            else if(e.key.keysym.sym == SDLK_a) {
+                cam.rotateLook(-0.02f);
+            }
+            else if(e.key.keysym.sym == SDLK_w) {
+                cam.rotateUp(0.02f);
+            }
+            else if(e.key.keysym.sym == SDLK_s) {
+                cam.rotateUp(-0.02f);
+            }
+            
+
 
             //handle projections wtih NDC
 
             std::cout << "Point 1: " << test[0].getP1() << "\n";
             std::cout << "Point 2: " << test[0].getP2() << "\n";
             std::cout << "Point 3: " << test[0].getP3() << "\n";
+            std::cout << "Look Angle: " << cam.getLookAngle() << "\n";
+            std::cout << "Look Vec: " << cam.getLookVec() << "\n";
+            std::cout << "Up Angle: " << cam.getUpAngle() << "\n";
+            std::cout << "Up Vec: " << cam.getUpVec() << "\n";
+
+
             printf("KeyDown\n");
         }
     }

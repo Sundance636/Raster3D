@@ -50,9 +50,9 @@ __host__ std::ostream& operator<<(std::ostream& out, const vec4& o);
 
 
 //Vector operations
-__device__ vec4 unit_vector4(vec4);
+__host__ __device__ vec4 unit_vector4(vec4);
 __host__ __device__ float dot_product4(vec4,vec4);
-__device__ vec4 cross_product4(vec4,vec4);
+__host__ __device__ vec4 cross_product4(vec4,vec4);//3d use case
 
 
 

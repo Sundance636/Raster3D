@@ -14,7 +14,7 @@
 #define true 1u
 
 void mainLoop(SDL_Renderer*);
-bool Input(entity&);
-void Draw(SDL_Renderer*, entity);
+bool Input(entity&, camera&);
+void Draw(SDL_Renderer*, entity, camera);
 
 #endif

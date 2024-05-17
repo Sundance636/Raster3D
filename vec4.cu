@@ -109,7 +109,7 @@ __host__ __device__ float vec4::magnitude() {
     return sqrtf( (this->e[0] * this->e[0]) + (this->e[1]*this->e[1]) + (this->e[2]*this->e[2]) + (this->e[3]*this->e[3]) );
 }
 
-__device__ vec4 unit_vector(vec4 vector) {
+__host__ __device__ vec4 unit_vector4(vec4 vector) {
     return vector / vector.magnitude(); //normalize the vector
 }
 
@@ -117,3 +117,6 @@ __host__ __device__ float dot_product4(vec4 vec1, vec4 vec2) {
     return (vec1.x() * vec2.x()) + (vec1.y() * vec2.y()) + (vec1.z() * vec2.z()) + (vec1.w() * vec2.w());
 }
 
+__host__ __device__ vec4 cross_product4(vec4 v1,vec4 v2) {
+    return vec4( v1.y() * v2.z() - v1.z() * v2.y(), v1.z() * v2.x() - v1.x() * v2.z(), v1.x() * v2.y() - v1.y() * v2.x(), 0.0 );
+}
