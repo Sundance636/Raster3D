@@ -105,6 +105,10 @@ __host__ __device__ vec4 operator+(const vec4 &Vector1, const vec4 &Vector2) {
     return vec4( Vector1.x() + Vector2.x(), Vector1.y() + Vector2.y(), Vector1.z() + Vector2.z(), Vector1.w() + Vector2.w());
 }
 
+__host__ __device__ vec4 operator-(const vec4 &Vector1, const vec4 &Vector2) {
+    return vec4( Vector1.x() - Vector2.x(), Vector1.y() - Vector2.y(), Vector1.z() - Vector2.z(), Vector1.w() - Vector2.w());
+}
+
 __host__ __device__ float vec4::magnitude() {
     return sqrtf( (this->e[0] * this->e[0]) + (this->e[1]*this->e[1]) + (this->e[2]*this->e[2]) + (this->e[3]*this->e[3]) );
 }

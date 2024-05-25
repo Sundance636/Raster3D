@@ -217,3 +217,22 @@ __host__ __device__ vec4 camera::rotateUp(float radians) {
     return vec4(0,0,1,0);
 
 }
+
+__host__ __device__ vec4 camera::direction() {
+    vec4 reference = vec4(0,0,1,1);
+    rotationY(lookAngle,reference);
+    rotationX(upAngle,reference);
+
+    
+
+    reference.setw(0);
+    reference = unit_vector4(reference);
+
+    //reference = reference + position;
+
+    return reference;
+}
+
+__host__ __device__ vec4 camera::getPosition() {
+    return this->position;
+}

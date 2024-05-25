@@ -24,13 +24,14 @@ class triangle {
         __host__ __device__ void setP1(vec4);
         __host__ __device__ void setP2(vec4);
         __host__ __device__ void setP3(vec4);
+        __host__ __device__ vec4 getSurfaceNormal();
 
         __host__ __device__ void translate(vec4);
         __host__ __device__ void triscale(vec4);
         __host__ __device__ void rotateX(float);
         __host__ __device__ void rotateY(float);
         __host__ __device__ void rotateZ(float);
-
+        __host__ __device__ void calculateSurfaceNormal();
 
 };
 

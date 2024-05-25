@@ -7,6 +7,8 @@ __host__ __device__ triangle::triangle(vec4 p1, vec4 p2, vec4 p3) {
     this->point1 = p1;
     this->point2 = p2;
     this->point3 = p3;
+
+    calculateSurfaceNormal();
 }
 
 __host__ __device__ vec4 triangle::getP1() {
@@ -27,6 +29,11 @@ __host__ __device__ void triangle::setP2(vec4 p2) {
 __host__ __device__ void triangle::setP3(vec4 p3) {
     this->point3 = p3;
 }
+
+__host__ __device__ vec4 triangle::getSurfaceNormal() {
+    return normal;
+}
+
 
 __host__ __device__ void triangle::translate(vec4 input) {
     
@@ -60,4 +67,13 @@ __host__ __device__ void triangle::rotateZ(float angle) {
     rotationZ(angle, this->point2);
     rotationZ(angle, this->point3);
 
+}
+__host__ __device__ void triangle::calculateSurfaceNormal() {
+    vec4 U = vec4(point2) - vec4(point1);
+    vec4 V = vec4(point3) - vec4(point1);
+    normal = cross_product4(U,V);
+
+    normal.setw(0); //direction not point
+
+    normal = unit_vector4(normal);
 }

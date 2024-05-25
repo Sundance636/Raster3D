@@ -46,6 +46,7 @@ __host__ __device__ vec4 operator*(float, const vec4&);
 __host__ __device__ vec4 operator/(const vec4&, float);
 __host__ __device__ vec4 operator/(float, const vec4&);
 __host__ __device__ vec4 operator+(const vec4&, const vec4&);
+__host__ __device__ vec4 operator-(const vec4&, const vec4&);
 __host__ std::ostream& operator<<(std::ostream& out, const vec4& o);
 
 

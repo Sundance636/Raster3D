@@ -60,6 +60,9 @@ class camera {
         __host__ __device__ vec4 getLookVec();
         __host__ __device__ float getUpAngle();
         __host__ __device__ vec4 getUpVec();
+        __host__ __device__ vec4 direction();
+        __host__ __device__ vec4 getPosition();
+
 
 
 

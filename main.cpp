@@ -63,20 +63,21 @@ void mainLoop(SDL_Renderer *renderer) {
 
     //triangle* tris = new triangle(vec4(100,100,100,1),vec4(140,180,140,1),vec4(180,140,140,1));
 
-    triangle cube[12] = {triangle(vec4(100,100,100,1),vec4(100,200,100,1),vec4(200,200,100,1)),
+    triangle cube[12] = {triangle(vec4(100,100,100,1),vec4(200,200,100,1),vec4(100,200,100,1)),
                         triangle(vec4(100,100,100,1),vec4(200,100,100,1),vec4(200,200,100,1)),
-                        triangle(vec4(100,100,200,1),vec4(200,100,200,1),vec4(200,200,200,1)),
+                        triangle(vec4(100,100,200,1),vec4(200,200,200,1),vec4(200,100,200,1)),
                         triangle(vec4(100,100,200,1),vec4(100,200,200,1),vec4(200,200,200,1)),
                         triangle(vec4(100,100,100,1),vec4(100,200,100,1),vec4(100,200,200,1)),
-                        triangle(vec4(100,100,100,1),vec4(100,100,200,1),vec4(100,200,200,1)),
-                        triangle(vec4(200,100,100,1),vec4(200,200,100,1),vec4(200,200,200,1)),
+                        triangle(vec4(100,100,100,1),vec4(100,200,200,1),vec4(100,100,200,1)),
+                        triangle(vec4(200,200,100,1),vec4(200,100,100,1),vec4(200,200,200,1)),
                         triangle(vec4(200,100,100,1),vec4(200,100,200,1),vec4(200,200,200,1)),
-                        triangle(vec4(100,100,100,1),vec4(100,100,200,1),vec4(200,100,100,1)),
-                        triangle(vec4(200,100,100,1),vec4(200,100,200,1),vec4(100,100,200,1)),
-                        triangle(vec4(200,200,100,1),vec4(200,200,200,1),vec4(100,200,200,1)),
-                        triangle(vec4(200,200,100,1),vec4(100,200,100,1),vec4(100,200,200,1))};
+                        triangle(vec4(100,100,100,1),vec4(100,100,200,1),vec4(200,100,200,1)),
+                        triangle(vec4(100,100,100,1),vec4(200,100,200,1),vec4(200,100,100,1)),
+                        triangle(vec4(100,200,100,1),vec4(200,200,200,1),vec4(100,200,200,1)),
+                        triangle(vec4(100,200,100,1),vec4(200,200,100,1),vec4(200,200,200,1))};
     entity testTriangle = entity(cube);
-    //tris[0];//
+
+
     testTriangle.setTriCount(12);
 
     camera cam = camera();
@@ -118,7 +119,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
     entity projection = entity(testTri);
 
-    projection.translateEntity(vec4(0.0f,-100.0f,-600.0f,0.0f));
+    projection.translateEntity(vec4(-100.0f,-100.0f,-600.0f,0.0f));
 
     //camera cam = camera();
 
@@ -130,6 +131,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
         projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
         projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
 
+        projection[i].calculateSurfaceNormal();
         //std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
         //std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
         //std::cout << "NDC Point 3: " << projection[0].getP3() << "\n";
@@ -152,6 +154,14 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
     
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
+
+        if( dot_product4(projection[i].getSurfaceNormal(), cam.direction()) > 0.0) {
+            //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
+
+            continue;
+        }
+
+
         SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
         SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
         SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
@@ -230,7 +240,12 @@ bool Input(entity &test, camera &cam) {
             std::cout << "Look Vec: " << cam.getLookVec() << "\n";
             std::cout << "Up Angle: " << cam.getUpAngle() << "\n";
             std::cout << "Up Vec: " << cam.getUpVec() << "\n";
+            //std::cout << "\n Surface Normal: " << test[0].getSurfaceNormal() << "\n";
+            std::cout << "\n Camera Direction: " << cam.direction() << "\n";
 
+            for(int i = 0; i < test.getTriCount(); i++) {
+                std::cout << "\n Surface Normal: " << test[i].getSurfaceNormal();
+            }
 
             printf("KeyDown\n");
         }
