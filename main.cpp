@@ -79,6 +79,16 @@ void mainLoop(SDL_Renderer *renderer) {
 
 
     testTriangle.setTriCount(12);
+    triangle flat[2] = {triangle(vec4(50,300,400,1),vec4(350,300,300,1),vec4(350,300,50,1)),
+                        triangle(vec4(50,300,50,1),vec4(50,300,300,1),vec4(350,300,50,1)),};
+    
+    
+
+    entity plane = entity(flat);
+    plane.setTriCount(2);
+    plane.scaleEntity(vec4(2.0,1.0,2.0,1.0));
+    //plane.scaleEntity(vec4(1.0,2.0,1.0,1.0));
+    //plane.scaleEntity(vec4(5.0,0.0,2.0,0.0));
 
     camera cam = camera();
 
@@ -87,8 +97,15 @@ void mainLoop(SDL_Renderer *renderer) {
     while(!gQuit) {
 
         gQuit = Input(testTriangle, cam);
+        SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
+        
+        Draw(renderer, plane, cam);
         Draw(renderer,testTriangle, cam);
+        
 
+ SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
+    SDL_RenderPresent(renderer);
     }
 
     //delete tris;
@@ -114,14 +131,14 @@ void filltri(entity testtri) {
 
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     //glDrawPixels(640,480,GL_RGB,GL_FLOAT,fb);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
-
+   
     entity projection = entity(testTri);
 
-    projection.translateEntity(vec4(-100.0f,-100.0f,-600.0f,0.0f));
+    projection.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
+    testTri.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
 
     //camera cam = camera();
+
 
     for(int i = 0; i < testTri.getTriCount(); i++) {
 
@@ -131,6 +148,8 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
         projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
         projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
 
+
+        //testTri[i].calculateSurfaceNormal();
         projection[i].calculateSurfaceNormal();
         //std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
         //std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
@@ -155,12 +174,20 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
 
-        if( dot_product4(projection[i].getSurfaceNormal(), cam.direction()) > 0.0) {
+        float view = dot_product4(projection[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
+        
+        if( view >= 0.0) {
             //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
 
             continue;
         }
 
+        view = dot_product4(testTri[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
+        view = view / 255;
+
+
+        //SDL_SetRenderDrawColor(renderer, 100 * view, 100*view, 100*view,  100*view);//white line
+        //flatShading(renderer, projection[i]);
 
         SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
         SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
@@ -176,8 +203,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     
 
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
-    SDL_RenderPresent(renderer);
+   
 
 }
 
@@ -196,39 +222,58 @@ bool Input(entity &test, camera &cam) {
             //test.rotateEntityY(.04f);
             //test.rotateEntityZ(.01f);
             if(e.key.keysym.sym == SDLK_LEFT) {
-                cam.movecam(vec4(1.0,0.0,0.0,0.0));
+                vec4 direction = vec4(3.0,0.0,0.0,1.0);
+                rotationY(-cam.getLookAngle(),direction);
+                direction.setw(0);
+                cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_RIGHT)) {
-                cam.movecam(vec4(-1.0,0.0,0.0,0.0));
+                vec4 direction = vec4(-3.0,0.0,0.0,1.0);
+                rotationY(-cam.getLookAngle(),direction);
+                direction.setw(0);
+                cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_UP)) {
-                cam.movecam(vec4(0.0,1.0,0.0,0.0));
+                vec4 direction = vec4(0.0,3.0,0.0,1.0);
+                rotationY(-cam.getLookAngle(),direction);
+                direction.setw(0);
+                cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_DOWN)) {
-                cam.movecam(vec4(0.0,-1.0,0.0,0.0));
+                vec4 direction = vec4(0.0,-3.0,0.0,1.0);
+                rotationY(-cam.getLookAngle(),direction);
+                direction.setw(0);
+                cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_e)) {
-                cam.movecam(vec4(0.0,0.0,3.5,0.0));
+                vec4 direction = vec4(0.0,0.0,8.5,1.0);
+                rotationY(-cam.getLookAngle(),direction);
+                direction.setw(0);
+                cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_q)) {
-                cam.movecam(vec4(0.0,0.0,-3.5,0.0));
+                vec4 direction = vec4(0.0,0.0,-8.5,1.0);
+                rotationY(-cam.getLookAngle(),direction);
+                direction.setw(0);
+                cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_DOWN)) {
-                cam.movecam(vec4(0.0,-1.0,0.0,0.0));
+                cam.movecam(vec4(0.0,-3.0,0.0,0.0));
             }
             else if(e.key.keysym.sym == SDLK_d) {
-                cam.rotateLook(0.02f);
+                cam.rotateLook(0.04f);
             }
             else if(e.key.keysym.sym == SDLK_a) {
-                cam.rotateLook(-0.02f);
+                cam.rotateLook(-0.04f);
             }
             else if(e.key.keysym.sym == SDLK_w) {
-                cam.rotateUp(0.02f);
+                cam.rotateUp(0.04f);
             }
             else if(e.key.keysym.sym == SDLK_s) {
-                cam.rotateUp(-0.02f);
+                cam.rotateUp(-0.04f);
             }
             
+
 
 
             //handle projections wtih NDC
@@ -242,6 +287,7 @@ bool Input(entity &test, camera &cam) {
             std::cout << "Up Vec: " << cam.getUpVec() << "\n";
             //std::cout << "\n Surface Normal: " << test[0].getSurfaceNormal() << "\n";
             std::cout << "\n Camera Direction: " << cam.direction() << "\n";
+            std::cout << "Camera Position: " << cam.getPosition() << "\n";
 
             for(int i = 0; i < test.getTriCount(); i++) {
                 std::cout << "\n Surface Normal: " << test[i].getSurfaceNormal();
@@ -251,4 +297,61 @@ bool Input(entity &test, camera &cam) {
         }
     }
     return false;
+}
+
+void flatShading(SDL_Renderer* renderer, triangle tri) {
+    
+    vec4 sorted[3] = {tri.getP1(),tri.getP2(),tri.getP3()};
+
+    auto compareY = [](const vec4& a, const vec4& b) {
+        return a.y() < b.y();
+    };
+
+    std::sort(std::begin(sorted), std::end(sorted), compareY);
+
+    if( sorted[1].y() == sorted[2].y() ) {
+        fillBottom(renderer, sorted);
+    }
+    else if(sorted[0].y() == sorted[1].y()) {
+        fillTop(renderer, sorted);
+    }
+    else {
+        vec4 v4 = vec4(
+      (sorted[0].x() + ((float)(sorted[1].y() - sorted[0].y()) / (float)(sorted[2].y() - sorted[0].y())) * (sorted[2].x() - sorted[0].x())), sorted[1].y(),0.0f,0.0f);
+      vec4 sorted2[3] = {sorted[0],sorted[1],v4};
+        fillBottom(renderer, sorted2);
+        vec4 sorted3[3] = {sorted[1],v4,sorted[2]};
+        fillTop(renderer, sorted3);
+    }
+
+}
+
+void fillBottom( SDL_Renderer* renderer , vec4 sorted[]) {
+    float invslope1 = (sorted[1].x() - sorted[0].x()) / (sorted[1].y() - sorted[0].y());
+    float invslope2 = (sorted[2].x() - sorted[0].x()) / (sorted[2].y() - sorted[0].y());
+
+    float curx1 = sorted[0].x();
+    float curx2 = sorted[0].x();
+
+    for (int scanlineY = sorted[0].y(); scanlineY <= sorted[1].y(); scanlineY++)
+    {
+        SDL_RenderDrawLine(renderer, curx1, scanlineY, (int)curx2, scanlineY);
+        curx1 += invslope1;
+        curx2 += invslope2;
+    }
+}
+
+void fillTop( SDL_Renderer* renderer , vec4 sorted[]) {
+    float invslope1 = (sorted[2].x() - sorted[0].x()) / (sorted[2].y() - sorted[0].y());
+    float invslope2 = (sorted[2].x() - sorted[1].x()) / (sorted[2].y() - sorted[1].y());
+
+    float curx1 = sorted[2].x();
+    float curx2 = sorted[2].x();
+
+    for (int scanlineY = sorted[2].y(); scanlineY > sorted[0].y(); scanlineY--)
+    {
+        SDL_RenderDrawLine(renderer, curx1, scanlineY, (int)curx2, scanlineY);
+        curx1 -= invslope1;
+        curx2 -= invslope2;
+    }
 }

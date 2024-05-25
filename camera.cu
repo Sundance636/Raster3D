@@ -2,8 +2,8 @@
 
 __host__ __device__ camera::camera() {
     //initialize default camera parameters
-         start = -10;//the near plane of the frustum
-         end = -400;//far plane
+         start = 0.01;//the near plane of the frustum
+         end = 400;//far plane
 
          topPlane = tan(M_PI_4/2.0f) * start;
 
@@ -39,22 +39,28 @@ vec4 ProjMat[4] = {vec4(start/rightPlane, 0.0f, 0.0f , 0.0f),
                 vec4(0.0f,0.0f,-1.0f, -2.0f * start),
                 vec4(0.0f,0.0f,-1.0f,0.0f)};
 
+                
+    point.setw(1);
+    translation(position, point);
     //translate point p, about the position of cam
-    translation(vec4(-position.x(),-position.y(),-position.z(),-position.w()), point);
-
+    //point = point - vec4(position.x(), position.y(), position.z(), 0.0f);
+    point.setw(1);
     //rotate point p
     rotationY(lookAngle,point);
     rotationX(upAngle,point);
+    //point = point + vec4(position.x(), position.y(), position.z(), 0.0f);
+    point.setw(1);
+    translation(-1.0f*position, point);
 
-    //translate back
+
+    point.setw(1);
     translation(position, point);
-    //translation(position, point);
 
     //the position offset should account for cameras position during transformations
-    vec4 newVec = vec4(dot_product4(ProjMat[0], point + position ),
-                dot_product4(ProjMat[1], point + position ),
-                dot_product4(ProjMat[2], point + position ),
-                dot_product4(ProjMat[3], point + position ));
+    vec4 newVec = vec4(dot_product4(ProjMat[0], point ),
+                dot_product4(ProjMat[1], point ),
+                dot_product4(ProjMat[2], point ),
+                dot_product4(ProjMat[3], point ));
 
 
 
@@ -147,6 +153,7 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
         
         look = vec4(0,0,1,1);
         rotationY(lookAngle,look);//rotate look vec to recalc angle
+        //look = unit_vector4(look);
     }
 
     
