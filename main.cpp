@@ -63,18 +63,26 @@ void mainLoop(SDL_Renderer *renderer) {
 
     //triangle* tris = new triangle(vec4(100,100,100,1),vec4(140,180,140,1),vec4(180,140,140,1));
 
-    triangle cube[12] = {triangle(vec4(100,100,100,1),vec4(200,200,100,1),vec4(100,200,100,1)),
-                        triangle(vec4(100,100,100,1),vec4(200,100,100,1),vec4(200,200,100,1)),
-                        triangle(vec4(100,100,200,1),vec4(200,200,200,1),vec4(200,100,200,1)),
-                        triangle(vec4(100,100,200,1),vec4(100,200,200,1),vec4(200,200,200,1)),
-                        triangle(vec4(100,100,100,1),vec4(100,200,100,1),vec4(100,200,200,1)),
-                        triangle(vec4(100,100,100,1),vec4(100,200,200,1),vec4(100,100,200,1)),
-                        triangle(vec4(200,200,100,1),vec4(200,100,100,1),vec4(200,200,200,1)),
-                        triangle(vec4(200,100,100,1),vec4(200,100,200,1),vec4(200,200,200,1)),
-                        triangle(vec4(100,100,100,1),vec4(100,100,200,1),vec4(200,100,200,1)),
-                        triangle(vec4(100,100,100,1),vec4(200,100,200,1),vec4(200,100,100,1)),
-                        triangle(vec4(100,200,100,1),vec4(200,200,200,1),vec4(100,200,200,1)),
-                        triangle(vec4(100,200,100,1),vec4(200,200,100,1),vec4(200,200,200,1))};
+
+    //first start with local coordinates in object space
+    triangle cube[12] = {triangle(vec4(0,0,0,1),vec4(0,1,0,1),vec4(1,0,0,1)),
+                        triangle(vec4(1,1,0,1),vec4(1,0,0,1),vec4(0,1,0,1)),
+
+                        triangle(vec4(0,0,1,1),vec4(1,0,1,1),vec4(0,1,1,1)),
+                        triangle(vec4(1,1,1,1),vec4(0,1,1,1),vec4(1,0,1,1)),
+
+                        triangle(vec4(0,1,0,1),vec4(0,0,0,1),vec4(0,1,1,1)),
+                        triangle(vec4(0,0,1,1),vec4(0,1,1,1),vec4(0,0,0,1)),
+
+                        triangle(vec4(1,0,0,1),vec4(1,1,0,1),vec4(1,0,1,1)),
+                        triangle(vec4(1,1,1,1),vec4(1,0,1,1),vec4(1,1,0,1)),
+
+                        triangle(vec4(0,1,0,1),vec4(0,1,1,1),vec4(1,1,0,1)),
+                        triangle(vec4(1,1,1,1),vec4(1,1,0,1),vec4(0,1,1,1)),
+
+                        triangle(vec4(0,0,0,1),vec4(1,0,0,1),vec4(0,0,1,1)),
+                        triangle(vec4(1,0,1,1),vec4(0,0,1,1),vec4(1,0,0,1))};
+
     entity testTriangle = entity(cube);
 
 
@@ -90,7 +98,13 @@ void mainLoop(SDL_Renderer *renderer) {
     //plane.scaleEntity(vec4(1.0,2.0,1.0,1.0));
     //plane.scaleEntity(vec4(5.0,0.0,2.0,0.0));
 
-    camera cam = camera();
+    camera cam = camera();//camera init in constructor
+
+
+    //transform from local to world space
+    testTriangle.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
+    
 
 
     
@@ -98,14 +112,14 @@ void mainLoop(SDL_Renderer *renderer) {
 
         gQuit = Input(testTriangle, cam);
         SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
+        SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
         
-        Draw(renderer, plane, cam);
+        //Draw(renderer, plane, cam);
         Draw(renderer,testTriangle, cam);
         
 
- SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
-    SDL_RenderPresent(renderer);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
+        SDL_RenderPresent(renderer);
     }
 
     //delete tris;
@@ -134,8 +148,8 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
    
     entity projection = entity(testTri);
 
-    projection.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
-    testTri.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
+    //projection.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
+    //testTri.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
 
     //camera cam = camera();
 
@@ -143,14 +157,26 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     for(int i = 0; i < testTri.getTriCount(); i++) {
 
         //std::cout << "Point 1: " << cam.perspectiveProjection(testTri[i].getP1()) << "\n";
+        //view tranform
+        projection[i].setP1(cam.viewTransform(projection[i].getP1()));
+        projection[i].setP2(cam.viewTransform(projection[i].getP2()));
+        projection[i].setP3(cam.viewTransform(projection[i].getP3()));
 
+        //testTri[i].setP1(cam.viewTransform(testTri[i].getP1()));
+        //testTri[i].setP2(cam.viewTransform(testTri[i].getP2()));
+        //testTri[i].setP3(cam.viewTransform(testTri[i].getP3()));
+
+        //calc normals
+        projection[i].calculateSurfaceNormal();
+
+        //perspective projection
         projection[i].setP1(cam.perspectiveProjection(projection[i].getP1()));
         projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
         projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
 
 
         //testTri[i].calculateSurfaceNormal();
-        projection[i].calculateSurfaceNormal();
+        
         //std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
         //std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
         //std::cout << "NDC Point 3: " << projection[0].getP3() << "\n";
@@ -163,41 +189,66 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     int HEIGHT = 480;
 
 
-    //part of coordinate conversion
+    //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0,0));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
+    //std::cout << "Screen Point 1: " << projection[0].getP1() << "\n";
+    //std::cout << "Screen Point 2: " << projection[0].getP2() << "\n";
+    //std::cout << "Screen Point 3: " << projection[0].getP3() << "\n";
 
     
 
     
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
-
-        float view = dot_product4(projection[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
         
-        if( view >= 0.0) {
-            //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
+        vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
+            eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
+            eyeLine = unit_vector4(eyeLine);
+            eyeLine.setx(-eyeLine.x());
+            eyeLine.setz(-eyeLine.z());
+            eyeLine.setw(0);
 
-            continue;
+        float view = dot_product4(testTri[i].getSurfaceNormal(), eyeLine);
+        
+        if( view < 0.0) {
+                //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
+
+
+            // continue;
+            
+            for(int i = 0; i < testTri.getTriCount(); i++) {
+                eyeLine =  cam.getPosition( ) - testTri[i].getP3();
+                
+                eyeLine = unit_vector4(eyeLine);
+                eyeLine.setx(-eyeLine.x());
+                eyeLine.setz(-eyeLine.z());
+                eyeLine.setw(0);
+
+                    std::cout << "\n Surface Normal: " << i << testTri[i].getSurfaceNormal();
+                    std::cout << "\n Eye vec: " << i << eyeLine;
+
+                }
+
+            //view = dot_product4(testTri[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
+            //view = view / 255;
+
+
+
+            SDL_SetRenderDrawColor(renderer, 100 * view, 100*view, 100*view,  100*view);//white line
+            flatShading(renderer, projection[i]);
+
+            SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
+            SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
+            SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
+
+            //std::cout << "\nTri number: " << i ;
+            //std::cout << "\nPoint 1: " << projection[i].getP1() << "\n";
+            //std::cout << "Point 2: " << projection[i].getP2() << "\n";
+            //std::cout << "Point 3: " << projection[i].getP3() << "\n";
         }
-
-        view = dot_product4(testTri[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
-        view = view / 255;
-
-
-        //SDL_SetRenderDrawColor(renderer, 100 * view, 100*view, 100*view,  100*view);//white line
-        //flatShading(renderer, projection[i]);
-
-        SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
-        SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
-        SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
-
-        //std::cout << "\nTri number: " << i ;
-        //std::cout << "\nPoint 1: " << projection[i].getP1() << "\n";
-        //std::cout << "Point 2: " << projection[i].getP2() << "\n";
-        //std::cout << "Point 3: " << projection[i].getP3() << "\n";
-
+        
     }
 
     
@@ -222,14 +273,14 @@ bool Input(entity &test, camera &cam) {
             //test.rotateEntityY(.04f);
             //test.rotateEntityZ(.01f);
             if(e.key.keysym.sym == SDLK_LEFT) {
-                vec4 direction = vec4(3.0,0.0,0.0,1.0);
-                rotationY(-cam.getLookAngle(),direction);
+                vec4 direction = vec4(-3.0,0.0,0.0,1.0);
+                rotationY(cam.getLookAngle(),direction);
                 direction.setw(0);
                 cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_RIGHT)) {
-                vec4 direction = vec4(-3.0,0.0,0.0,1.0);
-                rotationY(-cam.getLookAngle(),direction);
+                vec4 direction = vec4(3.0,0.0,0.0,1.0);
+                rotationY(cam.getLookAngle(),direction);
                 direction.setw(0);
                 cam.movecam(direction);
             }
@@ -247,18 +298,15 @@ bool Input(entity &test, camera &cam) {
             }
             else if((e.key.keysym.sym == SDLK_e)) {
                 vec4 direction = vec4(0.0,0.0,8.5,1.0);
-                rotationY(-cam.getLookAngle(),direction);
+                rotationY(cam.getLookAngle(),direction);
                 direction.setw(0);
                 cam.movecam(direction);
             }
             else if((e.key.keysym.sym == SDLK_q)) {
                 vec4 direction = vec4(0.0,0.0,-8.5,1.0);
-                rotationY(-cam.getLookAngle(),direction);
+                rotationY(cam.getLookAngle(),direction);
                 direction.setw(0);
                 cam.movecam(direction);
-            }
-            else if((e.key.keysym.sym == SDLK_DOWN)) {
-                cam.movecam(vec4(0.0,-3.0,0.0,0.0));
             }
             else if(e.key.keysym.sym == SDLK_d) {
                 cam.rotateLook(0.04f);
@@ -271,6 +319,9 @@ bool Input(entity &test, camera &cam) {
             }
             else if(e.key.keysym.sym == SDLK_s) {
                 cam.rotateUp(-0.04f);
+            }
+            else if(e.key.keysym.sym == SDLK_y) {
+                test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
             
 
@@ -290,7 +341,7 @@ bool Input(entity &test, camera &cam) {
             std::cout << "Camera Position: " << cam.getPosition() << "\n";
 
             for(int i = 0; i < test.getTriCount(); i++) {
-                std::cout << "\n Surface Normal: " << test[i].getSurfaceNormal();
+                //std::cout << "\n Surface Normal: " << test[i].getSurfaceNormal();
             }
 
             printf("KeyDown\n");
