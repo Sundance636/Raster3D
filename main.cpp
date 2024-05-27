@@ -65,7 +65,7 @@ void mainLoop(SDL_Renderer *renderer) {
 
 
     //first start with local coordinates in object space
-    triangle cube[12] = {triangle(vec4(0,0,0,1),vec4(0,1,0,1),vec4(1,0,0,1)),
+    std::vector<triangle> cube = {triangle(vec4(0,0,0,1),vec4(0,1,0,1),vec4(1,0,0,1)),
                         triangle(vec4(1,1,0,1),vec4(1,0,0,1),vec4(0,1,0,1)),
 
                         triangle(vec4(0,0,1,1),vec4(1,0,1,1),vec4(0,1,1,1)),
@@ -87,14 +87,15 @@ void mainLoop(SDL_Renderer *renderer) {
 
 
     testTriangle.setTriCount(12);
-    triangle flat[2] = {triangle(vec4(50,300,400,1),vec4(350,300,300,1),vec4(350,300,50,1)),
-                        triangle(vec4(50,300,50,1),vec4(50,300,300,1),vec4(350,300,50,1)),};
+    std::vector<triangle> flat = { triangle(vec4(0,0,0,1),vec4(1,0,0,1),vec4(0,0,1,1)),
+                        triangle(vec4(1,0,1,1),vec4(0,0,1,1),vec4(1,0,0,1))};
     
     
 
     entity plane = entity(flat);
     plane.setTriCount(2);
-    plane.scaleEntity(vec4(2.0,1.0,2.0,1.0));
+    plane.scaleEntity(vec4(200.0,200.0,200.0,1.0));
+    plane.translateEntity(vec4(-59.0f,50.0f,150.0f,0.0f));
     //plane.scaleEntity(vec4(1.0,2.0,1.0,1.0));
     //plane.scaleEntity(vec4(5.0,0.0,2.0,0.0));
 
@@ -104,6 +105,12 @@ void mainLoop(SDL_Renderer *renderer) {
     //transform from local to world space
     testTriangle.scaleEntity(vec4(50.0,50.0,50.0,1.0));
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
+
+    entity ship;
+    ship.loadObj("Models/sphere.obj");
+
+    ship.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
     
 
 
@@ -114,9 +121,9 @@ void mainLoop(SDL_Renderer *renderer) {
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
         
-        //Draw(renderer, plane, cam);
-        Draw(renderer,testTriangle, cam);
-        
+        Draw(renderer, plane, cam);
+        //Draw(renderer,testTriangle, cam);
+        Draw(renderer, ship, cam);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
         SDL_RenderPresent(renderer);
@@ -217,6 +224,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
 
             // continue;
+
             
             for(int i = 0; i < testTri.getTriCount(); i++) {
                 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
@@ -226,17 +234,19 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
                 eyeLine.setz(-eyeLine.z());
                 eyeLine.setw(0);
 
-                    std::cout << "\n Surface Normal: " << i << testTri[i].getSurfaceNormal();
-                    std::cout << "\n Eye vec: " << i << eyeLine;
+                    //std::cout << "\n Surface Normal: " << i << testTri[i].getSurfaceNormal();
+                    //std::cout << "\n Eye vec: " << i << eyeLine;
 
                 }
+            
+            //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
 
             //view = dot_product4(testTri[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
             //view = view / 255;
 
 
 
-            SDL_SetRenderDrawColor(renderer, 100 * view, 100*view, 100*view,  100*view);//white line
+            SDL_SetRenderDrawColor(renderer, 150 * -view, 150*-view, 150*-view,  150*-view);//white line
             flatShading(renderer, projection[i]);
 
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
