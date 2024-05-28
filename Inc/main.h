@@ -4,10 +4,9 @@
 #include <iostream>
 #include <algorithm>
 #include <SDL2/SDL.h>
-#include <GL/gl.h>
+#include <stdlib.h>
 
 #include "kernels.h"
-#include <stdlib.h>
 #include "camera.h"
 
 #define bool int

@@ -1,15 +1,15 @@
 CXX=g++
-CXXFLAGS=-Wall
+CXXFLAGS=-Wall -I./Inc
 LDFLAGS=-lSDL2 -ldl
-LDLIBS=/opt/cuda/lib/ -lcudart -lGL
+LDLIBS=/opt/cuda/lib/ -lcudart
 CUDAINC=/opt/cuda/include/
 NVCC=nvcc
 
-CU_FILES := $(wildcard *.cu)
-CPP_FILES := $(wildcard *.cpp)
+CU_FILES := $(wildcard Src/*.cu)
+CPP_FILES := $(wildcard Src/*.cpp)
 
-CU_OBJECTS := $(CU_FILES:.cu=.o)
-CPP_OBJECTS := $(CPP_FILES:.cpp=.o)
+CU_OBJECTS := $(CU_FILES:Src/%.cu=Src/%.o)
+CPP_OBJECTS := $(CPP_FILES:Src/%.cpp=Src/%.o)
 
 BIN=Engine
 
@@ -17,7 +17,7 @@ default: $(BIN)
 # Compile CUDA source files
 
 %.o: %.cu
-	$(NVCC) -dc $<  -o $@
+	$(NVCC) -dc -I./Inc $<  -o $@
 
 # Compile C++ source files
 %.o: %.cpp
@@ -41,5 +41,5 @@ profile:
 # debug build with nvprof?
 
 clean:
-	rm ./*.o
-	
+	rm ./Src/*.o
+	rm ./linked.o
