@@ -2,11 +2,11 @@
 #define __main_h__
 
 #include <iostream>
+#include <algorithm>
 #include <SDL2/SDL.h>
-#include <GL/gl.h>
+#include <stdlib.h>
 
 #include "kernels.h"
-#include <stdlib.h>
 #include "camera.h"
 
 #define bool int
@@ -16,5 +16,7 @@
 void mainLoop(SDL_Renderer*);
 bool Input(entity&, camera&);
 void Draw(SDL_Renderer*, entity, camera);
-
+void flatShading(SDL_Renderer*, triangle);
+void fillBottom(SDL_Renderer*, vec4*);
+void fillTop(SDL_Renderer*, vec4*);
 #endif

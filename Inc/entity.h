@@ -3,16 +3,19 @@
 
 #include "triangle.h"
 
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 class entity {
 
     private:
-        triangle* tris;
+        std::vector<triangle> tris;
         int triCount;
 
     public:
         entity();
-        entity(triangle*);
+        entity(std::vector<triangle>);
         entity(entity&);
         __host__ __device__ triangle& operator[](const int index);
 
@@ -24,6 +27,7 @@ class entity {
 
         __host__ __device__ void setTriCount(int);
         __host__ __device__ int getTriCount();
+        __host__ void loadObj(std::string);
 
 
 
