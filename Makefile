@@ -35,13 +35,15 @@ $(BIN): linked.o
 #	g++ main.o render.o -o cudaT -lSDL2 -ldl -L/opt/cuda/lib/ -lcudart -lGL
 	$(CXX) linked.o $(CPP_OBJECTS) $(CU_OBJECTS) -o $(BIN) $(LDFLAGS) -L$(LDLIBS)
 
+run: $(BIN)
 	./$(BIN)
 
 install:
 # do nothing for now
 
-profile:
+profile: $(BIN)
 # debug build with nvprof?
+	nvprof ./$(BIN)
 
 clean:
 	rm ./Src/*.o

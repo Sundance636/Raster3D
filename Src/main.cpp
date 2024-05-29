@@ -95,30 +95,21 @@ void mainLoop(SDL_Renderer *renderer) {
     entity plane = entity(flat);
     plane.setTriCount(2);
     plane.scaleEntity(vec4(200.0,200.0,200.0,1.0));
-    std::cout << "plane scale: " << plane[0].getP1() << '\n';
-    std::cout << "plane scale: " << plane[0].getP2() << '\n';
-    std::cout << "plane scale: " << plane[0].getP3() << '\n';
-
-
-    std::cout << "plane scale: " << plane[1].getP1() << '\n';
-    std::cout << "plane scale: " << plane[1].getP2() << '\n';
-    std::cout << "plane scale: " << plane[1].getP3() << '\n';
 
     plane.translateEntity(vec4(-59.0f,50.0f,150.0f,0.0f));
-    //plane.scaleEntity(vec4(1.0,2.0,1.0,1.0));
-    //plane.scaleEntity(vec4(5.0,0.0,2.0,0.0));
+
 
     camera cam = camera();//camera init in constructor
 
 
     //transform from local to world space
-    //testTriangle.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    testTriangle.scaleEntity(vec4(50.0,50.0,50.0,1.0));
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
     ship.loadObj("Models/sphere.obj");
 
-    //ship.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    ship.scaleEntity(vec4(50.0,50.0,50.0,1.0));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
     
 
@@ -132,7 +123,7 @@ void mainLoop(SDL_Renderer *renderer) {
         
         Draw(renderer, plane, cam);
         //Draw(renderer,testTriangle, cam);
-        //Draw(renderer, ship, cam);
+        Draw(renderer, ship, cam);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
         SDL_RenderPresent(renderer);
@@ -207,8 +198,8 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0,0));
-    //projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
-    //projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
+    projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
+    projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
     //std::cout << "Screen Point 1: " << projection[0].getP1() << "\n";
     //std::cout << "Screen Point 2: " << projection[0].getP2() << "\n";

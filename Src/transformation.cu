@@ -48,7 +48,6 @@ __global__ void scaleK(vec4 inputVec, vec4* point, int numOfPoints) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    //point .setx(20);
     
     if(idx < numOfPoints) { //three points per triangle
 
@@ -72,8 +71,8 @@ __global__ void scaleK(vec4 inputVec, vec4* point, int numOfPoints) {
         point[idx].setw(newVec.w());
 
         }
-        point[1].setx(20);
 }
+
 __global__ void testK(vec4* point) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;

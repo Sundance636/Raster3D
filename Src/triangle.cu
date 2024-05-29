@@ -80,12 +80,12 @@ __host__ void triangle::triscale(vec4 input) {
 
     //std::cout << "scale input: " << input << "\n";
     //std::cout << d_points << "\n";
-    std::cout << d_points[1] << "\n";
+    //std::cout << d_points[1] << "\n";
 
     //make kernel call
-    //scaleK<<<numBlocks, blockSize>>>(input, d_points, 3);
-    testK<<<numBlocks, blockSize>>>(d_points);
-    std::cout << d_points[1] << "\n";
+    scaleK<<<numBlocks, blockSize>>>(input, d_points, 3);
+    //testK<<<numBlocks, blockSize>>>(d_points);
+    //std::cout << d_points[1] << "\n";
     checkCudaErrors (cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
 
