@@ -5,13 +5,16 @@ LDLIBS=/opt/cuda/lib/ -lcudart
 CUDAINC=/opt/cuda/include/
 NVCC=nvcc
 
+BIN=Engine
+
 CU_FILES := $(wildcard Src/*.cu)
 CPP_FILES := $(wildcard Src/*.cpp)
 
 CU_OBJECTS := $(CU_FILES:Src/%.cu=Src/%.o)
 CPP_OBJECTS := $(CPP_FILES:Src/%.cpp=Src/%.o)
 
-BIN=Engine
+
+
 
 default: $(BIN)
 # Compile CUDA source files

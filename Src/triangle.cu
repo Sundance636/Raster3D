@@ -42,11 +42,64 @@ __host__ __device__ void triangle::translate(vec4 input) {
     translation(input,this->point3);
 }
 
-__host__ __device__ void triangle::triscale(vec4 input) {
-    scale(input,this->point1);
-    scale(input,this->point2);
-    scale(input,this->point3);
+void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
+    if (result) {
+        std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
+        file << ":" << line << " '" << func << "' \n";
+        
+        // Make sure we call CUDA Device Reset before exiting
+        cudaDeviceReset();
+        exit(99);
+    }
+}
 
+__host__ void triangle::triscale(vec4 input) {
+    //allocate memory/ transfer point to gpu in array/vec
+
+    vec4 h_points[3] = {this->point1, this->point2, this->point3}; 
+    vec4* d_points = nullptr;
+
+    //std::cout << d_points << "\n";
+
+    //allocate and transfer points to the GPU
+    checkCudaErrors(cudaMallocManaged((void**)&d_points, 3 * sizeof(vec4)));
+    d_points[0] = this->point1;
+    d_points[1] = this->point2;
+    d_points[2] = this->point3;
+
+    //std::cout << "Vec4 size: " << sizeof(vec4) << "\n";
+
+    //cudaMemcpy(d_points,h_points, 3 * sizeof(vec4), cudaMemcpyHostToDevice);
+    
+    int blockSize = 256;
+    int numBlocks = (3 + blockSize - 1) / blockSize;
+
+
+    //std::cout << "Block size: " << blockSize << "\n";
+    //std::cout << "numBlock: " << numBlocks << "\n";
+
+    //std::cout << "scale input: " << input << "\n";
+    //std::cout << d_points << "\n";
+    std::cout << d_points[1] << "\n";
+
+    //make kernel call
+    //scaleK<<<numBlocks, blockSize>>>(input, d_points, 3);
+    testK<<<numBlocks, blockSize>>>(d_points);
+    std::cout << d_points[1] << "\n";
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    
+
+    //transfer the results back
+    //cudaMemcpy(h_points, d_points, 3 * sizeof(vec4), cudaMemcpyDeviceToHost);
+
+    this->point1 = d_points[0];
+    this->point2 = d_points[1];
+    this->point3 = d_points[2];
+
+    checkCudaErrors(cudaFree(d_points));
+    
 }
 
 __host__ __device__ void triangle::rotateX(float angle) {

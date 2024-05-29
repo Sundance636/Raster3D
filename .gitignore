@@ -1,3 +1,4 @@
 .vscode
+Models/Sora.obj
 Engine
-./Models/Sora.obj
+*.o

@@ -44,6 +44,51 @@ __host__ __device__ vec4 scale(vec4 inputVec, vec4 &point) {
     return newVec;
 }
 
+__global__ void scaleK(vec4 inputVec, vec4* point, int numOfPoints) {
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    //point .setx(20);
+    
+    if(idx < numOfPoints) { //three points per triangle
+
+
+        vec4 ScaleMat[] = { vec4(inputVec.x(),0.0f,0.0f,0.0f),//init transl matrix
+                                vec4(0.0f,inputVec.y(),0.0f,0.0f),
+                                vec4(0.0f,0.0f,inputVec.z(), 0.0f),
+                                vec4(0.0f,0.0f,0.0f,1.0f) };
+
+        vec4 currPoint = point[idx];
+
+
+        vec4 newVec = vec4(dot_product4(ScaleMat[0], currPoint),
+                    dot_product4(ScaleMat[1], currPoint),
+                    dot_product4(ScaleMat[2], currPoint),
+                    dot_product4(ScaleMat[3], currPoint));
+        
+        point[idx].setx(newVec.x());
+        point[idx].sety(newVec.y());
+        point[idx].setz(newVec.z());
+        point[idx].setw(newVec.w());
+
+        }
+        point[1].setx(20);
+}
+__global__ void testK(vec4* point) {
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    //point .setx(20);
+    
+    if(idx < 3) { //three points per triangle
+
+
+        point[idx] = vec4(250,250,250,250);
+        }
+
+}
+
+
 __host__ __device__ vec4 rotationX(float radians, vec4 &point) {
     vec4 RotationMatX[] = {vec4(1.0f, 0.0f, 0.0f, 0.0f),//init rot matrix
                             vec4(0.0f, cos(radians), -sin(radians), 0.0f),
