@@ -154,8 +154,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
     for(int i = 0; i < testTri.getTriCount(); i++) {
 
-        //std::cout << testTri[i].getP1()<< "\n";
-
         //std::cout << "Point 1: " << cam.perspectiveProjection(testTri[i].getP1()) << "\n";
         //view tranform
         projection[i].setP1(cam.viewTransform(projection[i].getP1()));
