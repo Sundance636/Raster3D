@@ -46,9 +46,9 @@ __host__ __device__ void entity::scaleEntity(vec4 scaleFactor) {
     checkCudaErrors(cudaMemcpy(d_tris,trisArray, getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
 
 
-
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
     int blockSize = 256;
-    int numBlocks = (3 + blockSize - 1) / blockSize;
+    int numBlocks = (triCount + blockSize - 1) / blockSize;
 
     scaleK<<<numBlocks, blockSize>>>(scaleFactor, d_tris, getTriCount());
     checkCudaErrors (cudaDeviceSynchronize());
@@ -196,6 +196,8 @@ __host__ void entity::loadObj(std::string file) {
 
     this->tris = triangles;
     this->triCount = triangles.size();
+
+    std::cout << "Loaded Model: " << triangles.size() << " Triangles.\n";
 
     
 }

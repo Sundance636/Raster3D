@@ -92,7 +92,7 @@ void mainLoop(SDL_Renderer *renderer) {
     entity plane = entity(flat);
 
     plane.setTriCount(2);
-    plane.scaleEntity(vec4(200.0,200.0,200.0,1.0));
+    plane.scaleEntity(vec4(200.0f,200.0f,200.0f,1.0f));
     plane.translateEntity(vec4(-59.0f,50.0f,150.0f,0.0f));
 
 
@@ -100,13 +100,13 @@ void mainLoop(SDL_Renderer *renderer) {
 
 
     //transform from local to world space
-    testTriangle.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    testTriangle.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
     ship.loadObj("Models/sphere.obj");
-
-    ship.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    
+    ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
     
 
@@ -133,17 +133,13 @@ void mainLoop(SDL_Renderer *renderer) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
 
-            float elapsed = (frameEnd - frameStart) ;
-	        std::cout << "Current FPS: " << 1000.0/elapsed << std::endl;
+            //float elapsed = (frameEnd - frameStart) ;
+	        //std::cout << "Current FPS: " << 1000.0/elapsed << std::endl;
 
             frameStart = SDL_GetTicks();
         }
 
-        
     }
-
-    //delete tris;
-
 
 }
 
@@ -157,6 +153,8 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
 
     for(int i = 0; i < testTri.getTriCount(); i++) {
+
+        //std::cout << testTri[i].getP1()<< "\n";
 
         //std::cout << "Point 1: " << cam.perspectiveProjection(testTri[i].getP1()) << "\n";
         //view tranform
