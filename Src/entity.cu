@@ -38,18 +38,77 @@ __host__ __device__ void entity::translateEntity(vec4 input) {
 }
 
 __host__ __device__ void entity::scaleEntity(vec4 scaleFactor) {
+    triangle* trisArray = &(this->tris[0]);//pass vec as an array
+    triangle* d_tris;
 
     //vectorize later for cuda
-    for(int i = 0; i < triCount; i++ ) {
-        
-        //translate the three points in each tri;
-        (this->tris[i]).triscale(scaleFactor);
-        //(this->tris[i]).setP1((this->tris[i].getP1() * scaleFactor));
-        //(this->tris[i]).setP2((this->tris[i].getP2() * scaleFactor));
-        //(this->tris[i]).setP3((this->tris[i].getP3() * scaleFactor));
+    checkCudaErrors(cudaMallocManaged((void**)&d_tris, getTriCount() * sizeof(triangle)));
 
+    //copy to unified memory
+    for(int i = 0; i < getTriCount(); i++) {
+        d_tris[i] = trisArray[i];//maybe change later
     }
 
+    int blockSize = 256;
+    int numBlocks = (3 + blockSize - 1) / blockSize;
+    scaleK<<<numBlocks, blockSize>>>(scaleFactor, d_tris, getTriCount());
+
+    //testK<<<numBlocks, blockSize>>>(d_points);
+    //std::cout << d_points[1] << "\n";
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    //copy back
+    for(int i = 0; i < getTriCount(); i++) {
+        trisArray[i] = d_tris[i];//maybe change later
+    }
+
+
+    checkCudaErrors(cudaFree(d_tris));
+
+}
+
+//
+// MOVE BACK LATER
+__global__ void scaleK(vec4 inputVec, triangle* tri, int numOfTris) {
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    
+    if(idx < numOfTris) { //three points per triangle
+
+
+        vec4 ScaleMat[] = { vec4(inputVec.x(),0.0f,0.0f,0.0f),//init transl matrix
+                                vec4(0.0f,inputVec.y(),0.0f,0.0f),
+                                vec4(0.0f,0.0f,inputVec.z(), 0.0f),
+                                vec4(0.0f,0.0f,0.0f,1.0f) };
+
+        vec4 points[3] = {tri[idx].getP1(), tri[idx].getP2(), tri[idx].getP3()};
+
+
+            vec4 newVec = vec4( dot_product4(ScaleMat[0], points[0]),
+                                dot_product4(ScaleMat[1], points[0]),
+                                dot_product4(ScaleMat[2], points[0]),
+                                dot_product4(ScaleMat[3], points[0]));
+                    
+            tri[idx].setP1(newVec);
+
+            newVec = vec4(  dot_product4(ScaleMat[0], points[1]),
+                            dot_product4(ScaleMat[1], points[1]),
+                            dot_product4(ScaleMat[2], points[1]),
+                            dot_product4(ScaleMat[3], points[1]));
+                
+            tri[idx].setP2(newVec);
+
+
+            newVec = vec4(  dot_product4(ScaleMat[0], points[2]),
+                            dot_product4(ScaleMat[1], points[2]),
+                            dot_product4(ScaleMat[2], points[2]),
+                            dot_product4(ScaleMat[3], points[2]));
+                
+            tri[idx].setP3(newVec);
+
+        }
 }
 
 __host__ __device__ void entity::rotateEntityX(float angle) {

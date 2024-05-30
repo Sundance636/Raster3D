@@ -61,9 +61,6 @@ void mainLoop(SDL_Renderer *renderer) {
 
     bool gQuit = false;
 
-    //triangle* tris = new triangle(vec4(100,100,100,1),vec4(140,180,140,1),vec4(180,140,140,1));
-
-
     //first start with local coordinates in object space
     std::vector<triangle> cube = {triangle(vec4(0,0,0,1),vec4(0,1,0,1),vec4(1,0,0,1)),
                         triangle(vec4(1,1,0,1),vec4(1,0,0,1),vec4(0,1,0,1)),
@@ -93,9 +90,9 @@ void mainLoop(SDL_Renderer *renderer) {
     
 
     entity plane = entity(flat);
+
     plane.setTriCount(2);
     plane.scaleEntity(vec4(200.0,200.0,200.0,1.0));
-
     plane.translateEntity(vec4(-59.0f,50.0f,150.0f,0.0f));
 
 
@@ -113,20 +110,36 @@ void mainLoop(SDL_Renderer *renderer) {
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
     
 
+    Uint32 frameStart = 0;
+    
+    Uint32 framerate = 1000.0f/60.0f;
 
     
     while(!gQuit) {
 
         gQuit = Input(testTriangle, cam);
-        SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
-        
-        Draw(renderer, plane, cam);
-        //Draw(renderer,testTriangle, cam);
-        Draw(renderer, ship, cam);
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
-        SDL_RenderPresent(renderer);
+
+        //bind drawing rate to desired framerate
+        Uint32 frameEnd = SDL_GetTicks();
+        if(frameEnd - frameStart >= framerate) {
+            SDL_RenderClear(renderer);
+            SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
+            
+            Draw(renderer, plane, cam);
+            //Draw(renderer,testTriangle, cam);
+            Draw(renderer, ship, cam);
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
+            SDL_RenderPresent(renderer);
+
+            float elapsed = (frameEnd - frameStart) ;
+	        std::cout << "Current FPS: " << 1000.0/elapsed << std::endl;
+
+            frameStart = SDL_GetTicks();
+        }
+
+        
     }
 
     //delete tris;
@@ -134,31 +147,13 @@ void mainLoop(SDL_Renderer *renderer) {
 
 }
 
-/*
-void filltri(entity testtri) {
-    float bottomval = std::min(std::min(testtri[0].getP1().y(),testtri[0].getP2().y()), testtri[0].getP3().y());
-    float limit = std::max(std::max(testtri[0].getP1().y(),testtri[0].getP2().y()), testtri[0].getP3().y());
-
-    float leftval = std::min(std::min(testtri[0].getP1().x(),testtri[0].getP2().x()), testtri[0].getP3().x());
-    float limitU = std::max(std::max(testtri[0].getP1().x(),testtri[0].getP2().x()), testtri[0].getP3().x());
-
-    for(int v = bottomval; v < limit; v++ ) {
-        for(int u = leftval; u < limitU; u++) {
-            if();
-        }
-    }
-
-}*/
 
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
-    //glDrawPixels(640,480,GL_RGB,GL_FLOAT,fb);
-   
+
     entity projection = entity(testTri);
 
     //projection.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
     //testTri.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
-
-    //camera cam = camera();
 
 
     for(int i = 0; i < testTri.getTriCount(); i++) {
@@ -222,9 +217,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
         if( view < 0.0) {
                 //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
 
-
-            // continue;
-
             
             for(int i = 0; i < testTri.getTriCount(); i++) {
                 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
@@ -262,10 +254,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     }
 
     
-
-
-   
-
 }
 
 bool Input(entity &test, camera &cam) {
@@ -279,9 +267,6 @@ bool Input(entity &test, camera &cam) {
 
 
             //transforms in terms of world space
-            //test.translateEntity(vec4(40,40,40,1));
-            //test.rotateEntityY(.04f);
-            //test.rotateEntityZ(.01f);
             if(e.key.keysym.sym == SDLK_LEFT) {
                 vec4 direction = vec4(-3.0,0.0,0.0,1.0);
                 rotationY(cam.getLookAngle(),direction);
@@ -336,8 +321,6 @@ bool Input(entity &test, camera &cam) {
             
 
 
-
-            //handle projections wtih NDC
 
             std::cout << "Point 1: " << test[0].getP1() << "\n";
             std::cout << "Point 2: " << test[0].getP2() << "\n";
