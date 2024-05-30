@@ -42,26 +42,20 @@ __host__ __device__ void entity::scaleEntity(vec4 scaleFactor) {
     triangle* d_tris;
 
     //vectorize later for cuda
-    checkCudaErrors(cudaMallocManaged((void**)&d_tris, getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMalloc((void**)&d_tris, getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
 
-    //copy to unified memory
-    for(int i = 0; i < getTriCount(); i++) {
-        d_tris[i] = trisArray[i];//maybe change later
-    }
+
 
     int blockSize = 256;
     int numBlocks = (3 + blockSize - 1) / blockSize;
-    scaleK<<<numBlocks, blockSize>>>(scaleFactor, d_tris, getTriCount());
 
-    //testK<<<numBlocks, blockSize>>>(d_points);
-    //std::cout << d_points[1] << "\n";
+    scaleK<<<numBlocks, blockSize>>>(scaleFactor, d_tris, getTriCount());
     checkCudaErrors (cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
 
     //copy back
-    for(int i = 0; i < getTriCount(); i++) {
-        trisArray[i] = d_tris[i];//maybe change later
-    }
+    checkCudaErrors(cudaMemcpy(trisArray,d_tris, getTriCount() * sizeof(triangle), cudaMemcpyDeviceToHost));
 
 
     checkCudaErrors(cudaFree(d_tris));
