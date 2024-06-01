@@ -29,7 +29,7 @@ class entity {
         __host__ __device__ int getTriCount();
         __host__ void loadObj(std::string);
 
-        __host__ __device__ std::vector<triangle> getTriangles();
+        __host__ __device__ triangle* getTriangles();
 
 
 

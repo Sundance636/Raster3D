@@ -45,6 +45,10 @@ profile: $(BIN)
 # debug build with nvprof?
 	nvprof ./$(BIN)
 
+memorycheck: $(BIN)
+# debugging with valgrind
+	valgrind --leak-check=full --log-file="debug.txt" ./$(BIN)
+
 clean:
 	rm ./Src/*.o
 	rm ./linked.o

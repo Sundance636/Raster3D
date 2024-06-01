@@ -13,7 +13,7 @@ class triangle {
 
         vec4 normal;
 
-        u_int32_t colour;
+        u_int colour;
 
     public:
         __host__ __device__ triangle();

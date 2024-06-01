@@ -25,8 +25,8 @@ __host__ __device__ triangle& entity::operator[](const int index) {
     return this->tris[index];
 }
 
-__host__ __device__ std::vector<triangle> entity::getTriangles() {
-    return this->tris;
+__host__ __device__ triangle* entity::getTriangles() {
+    return this->tris.data();
 }
 
 

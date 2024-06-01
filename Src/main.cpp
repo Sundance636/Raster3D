@@ -146,29 +146,37 @@ void mainLoop(SDL_Renderer *renderer) {
 
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
-    entity projection = cam.viewTransformR(testTri);
+    entity projection = entity(testTri);
 
-/*
+    //std::cout << "\nView Transform: \n";
+    std::cout << "before function: " << projection[0].getP1() << "\n";
+
+    cam.viewTransformR(projection);
+    std::cout << "After function: " << projection[0].getP1() << "\n\n";
+    /*
+
     for(int i = 0; i < projection.getTriCount(); i++) {
 
         //view tranform
         projection[i].setP1(cam.viewTransform(projection[i].getP1()));
         projection[i].setP2(cam.viewTransform(projection[i].getP2()));
         projection[i].setP3(cam.viewTransform(projection[i].getP3()));
-
+        
 
         //perspective projection
         projection[i].setP1(cam.perspectiveProjection(projection[i].getP1()));
         projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
         projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
 
-    }
-*/
+    }*/
+
     // later just delcare and transform 'projection' on the same line
     // plus recalculate surface normals within view transform (not necessary)
     
 
     //std::cout << projection.getTriCount() << '\n';
+
+    cam.perspectiveProjectionR(projection);
     
 
     int WIDTH = 640;

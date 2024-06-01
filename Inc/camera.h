@@ -52,8 +52,10 @@ class camera {
     public:
         __host__ __device__ camera();
         __host__ __device__ vec4 perspectiveProjection(vec4);
+        __host__ entity perspectiveProjectionR(entity&);
+
         __host__ __device__ vec4 viewTransform(vec4);
-        __host__ entity viewTransformR(entity);
+        __host__ entity viewTransformR(entity&);
 
 
         __host__ __device__ vec4 movecam(vec4);
@@ -73,7 +75,7 @@ class camera {
 
 };
 
-__device__ void camViewK(camera, triangle*, int);
+__global__ void projectionK(float, float , triangle*, int);
 
 
 #endif
