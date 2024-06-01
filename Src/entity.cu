@@ -25,6 +25,11 @@ __host__ __device__ triangle& entity::operator[](const int index) {
     return this->tris[index];
 }
 
+__host__ __device__ std::vector<triangle> entity::getTriangles() {
+    return this->tris;
+}
+
+
 __host__ __device__ void entity::translateEntity(vec4 input) {
     triangle* trisArray = &(this->tris[0]);//pass vec as an array
     triangle* d_tris;
@@ -112,6 +117,7 @@ __global__ void scaleK(vec4 inputVec, triangle* tri, int numOfTris) {
         }
 }
 
+//MOVE BACK AS WELL
 __global__ void translationK(vec4 inputVec, triangle* tri, int numOfTris) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -122,7 +128,7 @@ __global__ void translationK(vec4 inputVec, triangle* tri, int numOfTris) {
         vec4 TranslationMat[] = { vec4(1.0f,0.0f,0.0f,inputVec.x()),//init transl matrix
                                 vec4(0.0f,1.0f,0.0f,inputVec.y()),
                                 vec4(0.0f,0.0f,1.0f,inputVec.z()),
-                                vec4(0.0f,0.0f,0.0f,inputVec.w()) };
+                                vec4(0.0f,0.0f,0.0f,1.0f) };
 
         vec4 points[3] = {tri[idx].getP1(), tri[idx].getP2(), tri[idx].getP3()};
 
@@ -151,6 +157,9 @@ __global__ void translationK(vec4 inputVec, triangle* tri, int numOfTris) {
     }
 }
 
+
+//FINISH REFACTORING ROTATIONS
+//Define kernels that reotate all given tris by the input angle
 __host__ __device__ void entity::rotateEntityX(float angle) {
     //vectorize later for cuda
     for(int i = 0; i < triCount; i++ ) {
@@ -161,7 +170,7 @@ __host__ __device__ void entity::rotateEntityX(float angle) {
     }
 }
 
-__host__ __device__ void entity::rotateEntityY(float angle) {
+__device__ void entity::rotateEntityYK(float angle) {
     //vectorize later for cuda
     for(int i = 0; i < triCount; i++ ) {
         
@@ -242,6 +251,16 @@ __host__ void entity::loadObj(std::string file) {
 
     this->tris = triangles;
     this->triCount = triangles.size();
+
+/*
+    for(int i = 0; i < triCount;i++ ) {
+        std::cout << (getTriangles()[i].getP1()) << "\n";
+        std::cout << (getTriangles()[i].getP2()) << "\n";
+        std::cout << (getTriangles()[i].getP3()) << "\n";
+
+    }
+
+*/
 
     std::cout << "Loaded Model: " << triangles.size() << " Triangles.\n";
 

@@ -22,12 +22,15 @@ class entity {
         __host__ __device__ void translateEntity(vec4);
         __host__ __device__ void rotateEntityX(float);
         __host__ __device__ void scaleEntity(vec4);
-        __host__ __device__ void rotateEntityY(float);
+        __device__ void rotateEntityYK(float);
         __host__ __device__ void rotateEntityZ(float);
 
         __host__ __device__ void setTriCount(int);
         __host__ __device__ int getTriCount();
         __host__ void loadObj(std::string);
+
+        __host__ __device__ std::vector<triangle> getTriangles();
+
 
 
 

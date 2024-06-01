@@ -148,65 +148,44 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
     entity projection = entity(testTri);
 
-    //projection.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
-    //testTri.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
+    for(int i = 0; i < projection.getTriCount(); i++) {
 
-
-    for(int i = 0; i < testTri.getTriCount(); i++) {
-
-        //std::cout << "Point 1: " << cam.perspectiveProjection(testTri[i].getP1()) << "\n";
         //view tranform
         projection[i].setP1(cam.viewTransform(projection[i].getP1()));
         projection[i].setP2(cam.viewTransform(projection[i].getP2()));
         projection[i].setP3(cam.viewTransform(projection[i].getP3()));
 
-        //testTri[i].setP1(cam.viewTransform(testTri[i].getP1()));
-        //testTri[i].setP2(cam.viewTransform(testTri[i].getP2()));
-        //testTri[i].setP3(cam.viewTransform(testTri[i].getP3()));
-
-        //calc normals
-        projection[i].calculateSurfaceNormal();
 
         //perspective projection
         projection[i].setP1(cam.perspectiveProjection(projection[i].getP1()));
         projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
         projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
 
-
-        //testTri[i].calculateSurfaceNormal();
-        
-        //std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
-        //std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
-        //std::cout << "NDC Point 3: " << projection[0].getP3() << "\n";
-
-
-
     }
+
+    // later just delcare and transform 'projection' on the same line
+    // plus recalculate surface normals within view transform (not necessary)
+   // projection = cam.viewTransformR(testTri);
+    
 
     int WIDTH = 640;
     int HEIGHT = 480;
 
 
     //part of coordinate conversion (screen space)
-    projection.translateEntity(vec4(1.0f,1.0f,0,0));
+    projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
-    //std::cout << "Screen Point 1: " << projection[0].getP1() << "\n";
-    //std::cout << "Screen Point 2: " << projection[0].getP2() << "\n";
-    //std::cout << "Screen Point 3: " << projection[0].getP3() << "\n";
-
-    
-
     
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
         
         vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
-            eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
-            eyeLine = unit_vector4(eyeLine);
-            eyeLine.setx(-eyeLine.x());
-            eyeLine.setz(-eyeLine.z());
-            eyeLine.setw(0);
+        eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
+        eyeLine = unit_vector4(eyeLine);
+        eyeLine.setx(-eyeLine.x());
+        eyeLine.setz(-eyeLine.z());
+        eyeLine.setw(0);
 
         float view = dot_product4(testTri[i].getSurfaceNormal(), eyeLine);
         
@@ -229,10 +208,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
             
             //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
 
-            //view = dot_product4(testTri[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
-            //view = view / 255;
-
-
 
             SDL_SetRenderDrawColor(renderer, 150 * -view, 150*-view, 150*-view,  150*-view);//white line
             flatShading(renderer, projection[i]);
@@ -241,14 +216,9 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
 
-            //std::cout << "\nTri number: " << i ;
-            //std::cout << "\nPoint 1: " << projection[i].getP1() << "\n";
-            //std::cout << "Point 2: " << projection[i].getP2() << "\n";
-            //std::cout << "Point 3: " << projection[i].getP3() << "\n";
         }
         
     }
-
     
 }
 

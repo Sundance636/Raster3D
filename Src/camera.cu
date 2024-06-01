@@ -232,6 +232,10 @@ __host__ __device__ vec4 camera::getPosition() {
     return this->position;
 }
 
+
+// rewite to take entity and do a batch transformation on all the tris to cam coodinates
+//
+
 __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 
     //pseudo view matrix operations
@@ -263,4 +267,73 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
     //translation(-1.0f*orientation, point);
 
     return point;
+}
+
+__host__ entity camera::viewTransformR(entity object) {
+
+    triangle* trisArray = &(object.getTriangles()[0]);//pass vec as an array
+    triangle* d_tris;
+
+    checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
+
+
+//pseudo view matrix operations
+    
+    //vec4 point.setw(1);
+
+    vec4 orientation = vec4(position);
+    orientation.setz(orientation.z() * -1.0f);
+    orientation.setx(orientation.x() * -1.0f);
+
+    //translation(orientation, point);
+    //translate all the tris
+    translationK<<<numBlocks, blockSize>>>(orientation,trisArray, object.getTriCount());
+
+    //then rotate them
+    
+
+    //camViewK<<<numBlocks, blockSize>>>(scaleFactor, d_tris, getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    //copy back
+    checkCudaErrors(cudaMemcpy(trisArray,d_tris, object.getTriCount() * sizeof(triangle), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_tris));
+
+
+
+    
+    //translate point p, about the position of cam
+
+    //point.setw(1);
+    //rotate point p
+    
+    
+    rotationY(-lookAngle,point);
+    rotationX(-upAngle,point);
+    
+
+
+    //translate back
+    //point.setw(1);
+    //translation(position, point);
+
+
+    //translate point relative to the cams position
+    //point.setw(1);
+    //vec4 orientation = vec4(position);
+    //orientation.sety(-position.y());
+    //translation(-1.0f*orientation, point);
+
+    return object;
+}
+
+__device__ void camViewK(camera cam, triangle* tris, int numberOfTris) {
+
 }
