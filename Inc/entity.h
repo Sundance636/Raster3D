@@ -22,7 +22,7 @@ class entity {
         __host__ __device__ void translateEntity(vec4);
         __host__ __device__ void rotateEntityX(float);
         __host__ __device__ void scaleEntity(vec4);
-        __device__ void rotateEntityYK(float);
+        __host__ __device__ void rotateEntityY(float);
         __host__ __device__ void rotateEntityZ(float);
 
         __host__ __device__ void setTriCount(int);
@@ -37,6 +37,8 @@ class entity {
 };
 __global__ void scaleK(vec4 inputVec, triangle*, int);
 __global__ void translationK(vec4 inputVec, triangle*, int);
+__global__ void rotationXK(float radians,  triangle* , int );
+__global__ void rotationYK(float radians, triangle*, int);
 
 
 

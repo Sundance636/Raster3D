@@ -293,10 +293,17 @@ __host__ entity camera::viewTransformR(entity object) {
 
     //translation(orientation, point);
     //translate all the tris
-    translationK<<<numBlocks, blockSize>>>(orientation,trisArray, object.getTriCount());
+    translationK<<<numBlocks, blockSize>>>(orientation,d_tris, object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
 
     //then rotate them
+    rotationYK<<<numBlocks, blockSize>>>(-lookAngle,d_tris,object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
     
+    rotationXK<<<numBlocks, blockSize>>>(-upAngle,d_tris,object.getTriCount());
+
 
     //camViewK<<<numBlocks, blockSize>>>(scaleFactor, d_tris, getTriCount());
     checkCudaErrors (cudaDeviceSynchronize());
@@ -307,7 +314,6 @@ __host__ entity camera::viewTransformR(entity object) {
     checkCudaErrors(cudaFree(d_tris));
 
 
-
     
     //translate point p, about the position of cam
 
@@ -315,8 +321,8 @@ __host__ entity camera::viewTransformR(entity object) {
     //rotate point p
     
     
-    rotationY(-lookAngle,point);
-    rotationX(-upAngle,point);
+    //rotationY(-lookAngle,point);
+    //rotationX(-upAngle,point);
     
 
 
@@ -331,7 +337,7 @@ __host__ entity camera::viewTransformR(entity object) {
     //orientation.sety(-position.y());
     //translation(-1.0f*orientation, point);
 
-    return object;
+    return entity(object);
 }
 
 __device__ void camViewK(camera cam, triangle* tris, int numberOfTris) {
