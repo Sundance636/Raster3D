@@ -251,11 +251,9 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
     
 
 
-
     //translate back
     //point.setw(1);
     //translation(position, point);
-
 
 
     //translate point relative to the cams position

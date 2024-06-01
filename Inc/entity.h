@@ -33,6 +33,7 @@ class entity {
 
 };
 __global__ void scaleK(vec4 inputVec, triangle*, int);
+__global__ void translationK(vec4 inputVec, triangle*, int);
 
 
 

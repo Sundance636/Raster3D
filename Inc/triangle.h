@@ -13,7 +13,7 @@ class triangle {
 
         vec4 normal;
 
-        u_int colour;
+        u_int32_t colour;
 
     public:
         __host__ __device__ triangle();
@@ -28,7 +28,6 @@ class triangle {
         __host__ __device__ vec4 getSurfaceNormal();
 
         __host__ __device__ void translate(vec4);
-        __host__ void triscale(vec4);
         __host__ __device__ void rotateX(float);
         __host__ __device__ void rotateY(float);
         __host__ __device__ void rotateZ(float);

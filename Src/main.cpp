@@ -2,8 +2,8 @@
 
 int main() {
 
-    const int WIDTH = 640;
-    const int HEIGHT = 480;
+    const u_int32_t WIDTH = 640;
+    const u_int32_t HEIGHT = 480;
 
     
 
@@ -110,9 +110,9 @@ void mainLoop(SDL_Renderer *renderer) {
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
     
 
-    Uint32 frameStart = 0;
+    u_int32_t frameStart = 0;
     
-    Uint32 framerate = 1000.0f/60.0f;
+    u_int32_t framerate = 1000.0f/60.0f;
 
     
     while(!gQuit) {
@@ -121,7 +121,7 @@ void mainLoop(SDL_Renderer *renderer) {
 
 
         //bind drawing rate to desired framerate
-        Uint32 frameEnd = SDL_GetTicks();
+        u_int32_t frameEnd = SDL_GetTicks();
         if(frameEnd - frameStart >= framerate) {
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
