@@ -1,5 +1,6 @@
 #include "main.h"
 
+//Branch has no hardware acceleration
 int main() {
 
     const int WIDTH = 640;
