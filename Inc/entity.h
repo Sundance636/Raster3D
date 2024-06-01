@@ -29,9 +29,16 @@ class entity {
         __host__ __device__ int getTriCount();
         __host__ void loadObj(std::string);
 
+        __host__ __device__ triangle* getTriangles();
+
+
 
 
 };
+__global__ void scaleK(vec4 inputVec, triangle*, int);
+__global__ void translationK(vec4 inputVec, triangle*, int);
+__global__ void rotationXK(float radians,  triangle* , int );
+__global__ void rotationYK(float radians, triangle*, int);
 
 
 

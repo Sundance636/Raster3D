@@ -3,8 +3,8 @@
 //Branch has no hardware acceleration
 int main() {
 
-    const int WIDTH = 640;
-    const int HEIGHT = 480;
+    const u_int32_t WIDTH = 640;
+    const u_int32_t HEIGHT = 480;
 
     
 
@@ -62,9 +62,6 @@ void mainLoop(SDL_Renderer *renderer) {
 
     bool gQuit = false;
 
-    //triangle* tris = new triangle(vec4(100,100,100,1),vec4(140,180,140,1),vec4(180,140,140,1));
-
-
     //first start with local coordinates in object space
     std::vector<triangle> cube = {triangle(vec4(0,0,0,1),vec4(0,1,0,1),vec4(1,0,0,1)),
                         triangle(vec4(1,1,0,1),vec4(1,0,0,1),vec4(0,1,0,1)),
@@ -94,139 +91,90 @@ void mainLoop(SDL_Renderer *renderer) {
     
 
     entity plane = entity(flat);
+
     plane.setTriCount(2);
-    plane.scaleEntity(vec4(200.0,200.0,200.0,1.0));
+    plane.scaleEntity(vec4(200.0f,200.0f,200.0f,1.0f));
     plane.translateEntity(vec4(-59.0f,50.0f,150.0f,0.0f));
-    //plane.scaleEntity(vec4(1.0,2.0,1.0,1.0));
-    //plane.scaleEntity(vec4(5.0,0.0,2.0,0.0));
+
 
     camera cam = camera();//camera init in constructor
 
 
     //transform from local to world space
-    testTriangle.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    testTriangle.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
     ship.loadObj("Models/sphere.obj");
-
-    ship.scaleEntity(vec4(50.0,50.0,50.0,1.0));
+    
+    ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
     
 
+    u_int32_t frameStart = 0;
+    
+    u_int32_t framerate = 1000.0f/60.0f;
 
     
     while(!gQuit) {
 
         gQuit = Input(testTriangle, cam);
-        SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
-        
-        Draw(renderer, plane, cam);
-        //Draw(renderer,testTriangle, cam);
-        Draw(renderer, ship, cam);
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
-        SDL_RenderPresent(renderer);
+
+        //bind drawing rate to desired framerate
+        u_int32_t frameEnd = SDL_GetTicks();
+        if(frameEnd - frameStart >= framerate) {
+            SDL_RenderClear(renderer);
+            SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
+            
+            Draw(renderer, plane, cam);
+            //Draw(renderer,testTriangle, cam);
+            Draw(renderer, ship, cam);
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
+            SDL_RenderPresent(renderer);
+
+            //float elapsed = (frameEnd - frameStart) ;
+	        //std::cout << "Current FPS: " << 1000.0/elapsed << std::endl;
+
+            frameStart = SDL_GetTicks();
+        }
+
     }
-
-    //delete tris;
-
 
 }
 
-/*
-void filltri(entity testtri) {
-    float bottomval = std::min(std::min(testtri[0].getP1().y(),testtri[0].getP2().y()), testtri[0].getP3().y());
-    float limit = std::max(std::max(testtri[0].getP1().y(),testtri[0].getP2().y()), testtri[0].getP3().y());
-
-    float leftval = std::min(std::min(testtri[0].getP1().x(),testtri[0].getP2().x()), testtri[0].getP3().x());
-    float limitU = std::max(std::max(testtri[0].getP1().x(),testtri[0].getP2().x()), testtri[0].getP3().x());
-
-    for(int v = bottomval; v < limit; v++ ) {
-        for(int u = leftval; u < limitU; u++) {
-            if();
-        }
-    }
-
-}*/
 
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
-    //glDrawPixels(640,480,GL_RGB,GL_FLOAT,fb);
-   
-    entity projection = entity(testTri);
-
-    //projection.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
-    //testTri.translateEntity(vec4(-100.0f,-100.0f,-700.0f,0.0f));
-
-    //camera cam = camera();
-
-
-    for(int i = 0; i < testTri.getTriCount(); i++) {
-
-        //std::cout << "Point 1: " << cam.perspectiveProjection(testTri[i].getP1()) << "\n";
-        //view tranform
-        projection[i].setP1(cam.viewTransform(projection[i].getP1()));
-        projection[i].setP2(cam.viewTransform(projection[i].getP2()));
-        projection[i].setP3(cam.viewTransform(projection[i].getP3()));
-
-        //testTri[i].setP1(cam.viewTransform(testTri[i].getP1()));
-        //testTri[i].setP2(cam.viewTransform(testTri[i].getP2()));
-        //testTri[i].setP3(cam.viewTransform(testTri[i].getP3()));
-
-        //calc normals
-        projection[i].calculateSurfaceNormal();
-
-        //perspective projection
-        projection[i].setP1(cam.perspectiveProjection(projection[i].getP1()));
-        projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
-        projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
-
-
-        //testTri[i].calculateSurfaceNormal();
-        
-        //std::cout << "NDC Point 1: " << projection[0].getP1() << "\n";
-        //std::cout << "NDC Point 2: " << projection[0].getP2() << "\n";
-        //std::cout << "NDC Point 3: " << projection[0].getP3() << "\n";
-
-
-
-    }
-
     int WIDTH = 640;
     int HEIGHT = 480;
 
+    entity projection = entity(testTri);
+
+    cam.viewTransformR(projection);
+    cam.perspectiveProjectionR(projection);
+
 
     //part of coordinate conversion (screen space)
-    projection.translateEntity(vec4(1.0f,1.0f,0,0));
+    projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
-    //std::cout << "Screen Point 1: " << projection[0].getP1() << "\n";
-    //std::cout << "Screen Point 2: " << projection[0].getP2() << "\n";
-    //std::cout << "Screen Point 3: " << projection[0].getP3() << "\n";
-
-    
-
     
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
         
         vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
-            eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
-            eyeLine = unit_vector4(eyeLine);
-            eyeLine.setx(-eyeLine.x());
-            eyeLine.setz(-eyeLine.z());
-            eyeLine.setw(0);
+        eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
+        eyeLine = unit_vector4(eyeLine);
+        eyeLine.setx(-eyeLine.x());
+        eyeLine.setz(-eyeLine.z());
+        eyeLine.setw(0);
 
         float view = dot_product4(testTri[i].getSurfaceNormal(), eyeLine);
         
         if( view < 0.0) {
                 //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
 
-
-            // continue;
-
-            
             for(int i = 0; i < testTri.getTriCount(); i++) {
                 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
                 
@@ -242,11 +190,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
             
             //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
 
-            //view = dot_product4(testTri[i].getSurfaceNormal(), cam.getPosition() - testTri[i].getP3() );
-            //view = view / 255;
-
-
-
             SDL_SetRenderDrawColor(renderer, 150 * -view, 150*-view, 150*-view,  150*-view);//white line
             flatShading(renderer, projection[i]);
 
@@ -254,19 +197,10 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
 
-            //std::cout << "\nTri number: " << i ;
-            //std::cout << "\nPoint 1: " << projection[i].getP1() << "\n";
-            //std::cout << "Point 2: " << projection[i].getP2() << "\n";
-            //std::cout << "Point 3: " << projection[i].getP3() << "\n";
         }
         
     }
-
     
-
-
-   
-
 }
 
 bool Input(entity &test, camera &cam) {
@@ -280,9 +214,6 @@ bool Input(entity &test, camera &cam) {
 
 
             //transforms in terms of world space
-            //test.translateEntity(vec4(40,40,40,1));
-            //test.rotateEntityY(.04f);
-            //test.rotateEntityZ(.01f);
             if(e.key.keysym.sym == SDLK_LEFT) {
                 vec4 direction = vec4(-3.0,0.0,0.0,1.0);
                 rotationY(cam.getLookAngle(),direction);
@@ -335,10 +266,6 @@ bool Input(entity &test, camera &cam) {
                 test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
             
-
-
-
-            //handle projections wtih NDC
 
             std::cout << "Point 1: " << test[0].getP1() << "\n";
             std::cout << "Point 2: " << test[0].getP2() << "\n";

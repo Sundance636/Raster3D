@@ -42,12 +42,17 @@ __host__ __device__ void triangle::translate(vec4 input) {
     translation(input,this->point3);
 }
 
-__host__ __device__ void triangle::triscale(vec4 input) {
-    scale(input,this->point1);
-    scale(input,this->point2);
-    scale(input,this->point3);
-
+void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
+    if (result) {
+        std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
+        file << ":" << line << " '" << func << "' \n";
+        
+        // Make sure we call CUDA Device Reset before exiting
+        cudaDeviceReset();
+        exit(99);
+    }
 }
+
 
 __host__ __device__ void triangle::rotateX(float angle) {
     rotationX(angle, this->point1);

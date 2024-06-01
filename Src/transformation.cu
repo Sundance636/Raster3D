@@ -4,7 +4,7 @@ __host__ __device__ vec4 translation(vec4 inputVec, vec4 &point) {
     vec4 TranslationMat[] = { vec4(1.0f,0.0f,0.0f,inputVec.x()),//init transl matrix
                             vec4(0.0f,1.0f,0.0f,inputVec.y()),
                             vec4(0.0f,0.0f,1.0f,inputVec.z()),
-                            vec4(0.0f,0.0f,0.0f,inputVec.w()) };
+                            vec4(0.0f,0.0f,0.0f,1.0f) };
 
 
     vec4 newVec = vec4(dot_product4(TranslationMat[0], point),
@@ -43,6 +43,8 @@ __host__ __device__ vec4 scale(vec4 inputVec, vec4 &point) {
 
     return newVec;
 }
+
+
 
 __host__ __device__ vec4 rotationX(float radians, vec4 &point) {
     vec4 RotationMatX[] = {vec4(1.0f, 0.0f, 0.0f, 0.0f),//init rot matrix

@@ -34,10 +34,10 @@ __host__ __device__ camera::camera() {
 
 __host__ __device__ vec4 camera::perspectiveProjection(vec4 point) {
     //symmetric viewing volume (probably correct i dunno?)
-vec4 ProjMat[4] = {vec4(1.0f/rightPlane, 0.0f, 0.0f , 0.0f),
-                vec4(0.0f, 1.0f/topPlane,0.0f, 0.0f),
-                vec4(0.0f,0.0f,1.0f, 0.0f),
-                vec4(0.0f,0.0f,1.0f,0.0f)};
+    vec4 ProjMat[4] = {vec4(1.0f/rightPlane, 0.0f, 0.0f , 0.0f),
+                    vec4(0.0f, 1.0f/topPlane,0.0f, 0.0f),
+                    vec4(0.0f,0.0f,1.0f, 0.0f),
+                    vec4(0.0f,0.0f,1.0f,0.0f)};
 
 
     //the position offset should account for cameras position during transformations
@@ -62,6 +62,80 @@ vec4 ProjMat[4] = {vec4(1.0f/rightPlane, 0.0f, 0.0f , 0.0f),
     //newVec.setz(-newVec.z());
 
     return newVec;
+}
+
+__host__ entity camera::perspectiveProjectionR(entity &object) {
+
+    triangle* trisArray = object.getTriangles();//pass vec as an array
+    triangle* d_tris;
+
+    checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
+
+    projectionK<<<numBlocks, blockSize>>>(this->rightPlane, this->topPlane, d_tris, object.getTriCount());
+
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    //copy back
+    checkCudaErrors(cudaMemcpy(trisArray,d_tris, object.getTriCount() * sizeof(triangle), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_tris));
+    return entity(object);
+}
+
+__global__ void projectionK(float rightPlane, float topPlane , triangle* tris, int numOfTris) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    
+    if(idx < numOfTris) { //each triangle
+        //symmetric viewing volume (probably correct i dunno?)
+        vec4 ProjMat[4] = { vec4(1.0f/rightPlane, 0.0f, 0.0f , 0.0f),
+                            vec4(0.0f, 1.0f/topPlane,0.0f, 0.0f),
+                            vec4(0.0f,0.0f,1.0f, 0.0f),
+                            vec4(0.0f,0.0f,1.0f,0.0f)};
+
+        vec4 points[3] = {tris[idx].getP1(), tris[idx].getP2(), tris[idx].getP3()};
+
+
+        vec4 newVec = vec4( dot_product4(ProjMat[0], points[0]),
+                            dot_product4(ProjMat[1], points[0]),
+                            dot_product4(ProjMat[2], points[0]),
+                            dot_product4(ProjMat[3], points[0]));
+
+        if(newVec.w() != 0.0f) {
+            newVec = newVec/newVec.w();
+        }
+        
+        tris[idx].setP1(newVec);
+
+        newVec = vec4(      dot_product4(ProjMat[0], points[1]),
+                            dot_product4(ProjMat[1], points[1]),
+                            dot_product4(ProjMat[2], points[1]),
+                            dot_product4(ProjMat[3], points[1]));
+
+        if(newVec.w() != 0.0f) {
+            newVec = newVec/newVec.w();
+        }
+
+        tris[idx].setP2(newVec);
+
+        newVec = vec4(      dot_product4(ProjMat[0], points[2]),
+                            dot_product4(ProjMat[1], points[2]),
+                            dot_product4(ProjMat[2], points[2]),
+                            dot_product4(ProjMat[3], points[2]));
+
+        if(newVec.w() != 0.0f) {
+            newVec = newVec/newVec.w();
+        }
+
+        tris[idx].setP3(newVec);
+    }
+
 }
 
 __host__ __device__ float camera::getLookAngle() {
@@ -232,6 +306,10 @@ __host__ __device__ vec4 camera::getPosition() {
     return this->position;
 }
 
+
+// rewite to take entity and do a batch transformation on all the tris to cam coodinates
+//
+
 __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 
     //pseudo view matrix operations
@@ -251,11 +329,9 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
     
 
 
-
     //translate back
     //point.setw(1);
     //translation(position, point);
-
 
 
     //translate point relative to the cams position
@@ -265,4 +341,49 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
     //translation(-1.0f*orientation, point);
 
     return point;
+}
+
+__host__ entity camera::viewTransformR(entity& object) {
+
+    triangle* trisArray = object.getTriangles();//pass vec as an array
+    std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
+    //trisArray[0].setP1(vec4(69,69,69,69));
+
+    triangle* d_tris = nullptr;
+
+    checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
+
+
+//pseudo view matrix operations
+    
+    vec4 orientation = vec4(position);
+    orientation.setz(orientation.z() * -1.0f);
+    orientation.setx(orientation.x() * -1.0f);
+
+    //translate all the tris
+    translationK<<<numBlocks, blockSize>>>(orientation,d_tris, object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    //then rotate them
+    rotationYK<<<numBlocks, blockSize>>>(-lookAngle,d_tris,object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+    
+    rotationXK<<<numBlocks, blockSize>>>(-upAngle,d_tris,object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    //copy back
+
+    checkCudaErrors(cudaMemcpy(trisArray,d_tris, object.getTriCount() * sizeof(triangle), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_tris));
+    d_tris = nullptr;
+
+    return entity(object);
 }

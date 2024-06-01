@@ -4,6 +4,7 @@
 #include "vec4.h"
 #include "transformation.h"
 
+
 class triangle {
     private:
         vec4 point1;//reference points in clockwise orientation
@@ -27,7 +28,6 @@ class triangle {
         __host__ __device__ vec4 getSurfaceNormal();
 
         __host__ __device__ void translate(vec4);
-        __host__ __device__ void triscale(vec4);
         __host__ __device__ void rotateX(float);
         __host__ __device__ void rotateY(float);
         __host__ __device__ void rotateZ(float);

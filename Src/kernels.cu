@@ -17,29 +17,10 @@ __global__ void render(vec3 *frameBuffer, int pixels_x, int pixels_y , vec3 lowe
 
 
 
-void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
-    if (result) {
-        std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
-        file << ":" << line << " '" << func << "' \n";
-        
-        // Make sure we call CUDA Device Reset before exiting
-        cudaDeviceReset();
-        exit(99);
-    }
-}
 
 
-void* allocateFb(vec3* d_fb, int width, int height) {
-    int num_pixels = width*height;
-    size_t fb_size = num_pixels*sizeof(vec3);
 
-    checkCudaErrors(cudaMalloc((void**)&d_fb, fb_size));
 
-    //std::cout << d_fb << "\n";
-    //checkCudaErrors(cudaMallocManaged((void **)&d_fb, fb_size));
-
-    return d_fb;
-}
 
 void renderBuffer(vec3* d_fb, int tx, int ty, entity** d_world) {
     // Render our buffer
@@ -59,23 +40,4 @@ void renderBuffer(vec3* d_fb, int tx, int ty, entity** d_world) {
 
 }
 
-void freeGPU(vec3* d_fb,entity** d_list, entity** d_world) {
-    checkCudaErrors(cudaFree(d_fb));
-    
-    //free_world<<<1,1>>>(d_list,d_world);
-
-}
-
-void transferMem(vec3* h_fb,vec3* d_fb) {
-    int num_pixels = nx*NY;
-    size_t fb_size = 3*num_pixels*sizeof(float);
-    std::cout << "Device frame buffer address: " << d_fb << "\n";
-    std::cout << "Host frame buffer address: " << h_fb << "\n";
-    std::cout << "FrameBuffer Size: " << fb_size << "\n";
-
-    checkCudaErrors(cudaMemcpy(h_fb,d_fb,fb_size, cudaMemcpyDeviceToHost));
-
-
-
-}
 

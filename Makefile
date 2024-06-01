@@ -5,13 +5,16 @@ LDLIBS=/opt/cuda/lib/ -lcudart
 CUDAINC=/opt/cuda/include/
 NVCC=nvcc
 
+BIN=Engine
+
 CU_FILES := $(wildcard Src/*.cu)
 CPP_FILES := $(wildcard Src/*.cpp)
 
 CU_OBJECTS := $(CU_FILES:Src/%.cu=Src/%.o)
 CPP_OBJECTS := $(CPP_FILES:Src/%.cpp=Src/%.o)
 
-BIN=Engine
+
+
 
 default: $(BIN)
 # Compile CUDA source files
@@ -32,13 +35,19 @@ $(BIN): linked.o
 #	g++ main.o render.o -o cudaT -lSDL2 -ldl -L/opt/cuda/lib/ -lcudart -lGL
 	$(CXX) linked.o $(CPP_OBJECTS) $(CU_OBJECTS) -o $(BIN) $(LDFLAGS) -L$(LDLIBS)
 
+run: $(BIN)
 	./$(BIN)
 
 install:
 # do nothing for now
 
-profile:
+profile: $(BIN)
 # debug build with nvprof?
+	nvprof ./$(BIN)
+
+memorycheck: $(BIN)
+# debugging with valgrind
+	valgrind --leak-check=full --log-file="debug.txt" ./$(BIN)
 
 clean:
 	rm ./Src/*.o
