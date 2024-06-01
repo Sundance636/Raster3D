@@ -145,42 +145,13 @@ void mainLoop(SDL_Renderer *renderer) {
 
 
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
+    int WIDTH = 640;
+    int HEIGHT = 480;
 
     entity projection = entity(testTri);
 
-    //std::cout << "\nView Transform: \n";
-    std::cout << "before function: " << projection[0].getP1() << "\n";
-
     cam.viewTransformR(projection);
-    std::cout << "After function: " << projection[0].getP1() << "\n\n";
-    /*
-
-    for(int i = 0; i < projection.getTriCount(); i++) {
-
-        //view tranform
-        projection[i].setP1(cam.viewTransform(projection[i].getP1()));
-        projection[i].setP2(cam.viewTransform(projection[i].getP2()));
-        projection[i].setP3(cam.viewTransform(projection[i].getP3()));
-        
-
-        //perspective projection
-        projection[i].setP1(cam.perspectiveProjection(projection[i].getP1()));
-        projection[i].setP2(cam.perspectiveProjection(projection[i].getP2()));
-        projection[i].setP3(cam.perspectiveProjection(projection[i].getP3()));
-
-    }*/
-
-    // later just delcare and transform 'projection' on the same line
-    // plus recalculate surface normals within view transform (not necessary)
-    
-
-    //std::cout << projection.getTriCount() << '\n';
-
     cam.perspectiveProjectionR(projection);
-    
-
-    int WIDTH = 640;
-    int HEIGHT = 480;
 
 
     //part of coordinate conversion (screen space)
@@ -203,7 +174,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
         if( view < 0.0) {
                 //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
 
-            
             for(int i = 0; i < testTri.getTriCount(); i++) {
                 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
                 
@@ -218,7 +188,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
                 }
             
             //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
-
 
             SDL_SetRenderDrawColor(renderer, 150 * -view, 150*-view, 150*-view,  150*-view);//white line
             flatShading(renderer, projection[i]);
@@ -296,8 +265,6 @@ bool Input(entity &test, camera &cam) {
                 test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
             
-
-
 
             std::cout << "Point 1: " << test[0].getP1() << "\n";
             std::cout << "Point 2: " << test[0].getP2() << "\n";

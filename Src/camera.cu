@@ -353,15 +353,6 @@ __host__ entity camera::viewTransformR(entity& object) {
 
     checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
     checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
-//std::cout << "View Transform malloc \n";
-//std::cout << "TriCount: " << object.getTriCount() << "\n";
-//std::cout << "Tri Size: " << sizeof(triangle) << "\n";
-
-//std::cout << "Malloc Size: " << object.getTriCount() * sizeof(triangle) << "\n";
-
-
-
-
 
     //ENSURE THESE TWO NUMBERS ARE OPTIMAL
     int blockSize = 256;
@@ -370,13 +361,10 @@ __host__ entity camera::viewTransformR(entity& object) {
 
 //pseudo view matrix operations
     
-    //vec4 point.setw(1);
-
     vec4 orientation = vec4(position);
     orientation.setz(orientation.z() * -1.0f);
     orientation.setx(orientation.x() * -1.0f);
 
-    //translation(orientation, point);
     //translate all the tris
     translationK<<<numBlocks, blockSize>>>(orientation,d_tris, object.getTriCount());
     checkCudaErrors (cudaDeviceSynchronize());
@@ -396,31 +384,6 @@ __host__ entity camera::viewTransformR(entity& object) {
     checkCudaErrors(cudaMemcpy(trisArray,d_tris, object.getTriCount() * sizeof(triangle), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(d_tris));
     d_tris = nullptr;
-    //std::cout << "View Transform free \n";
-
-
-    
-    //translate point p, about the position of cam
-
-    //point.setw(1);
-    //rotate point p
-    
-    
-    //rotationY(-lookAngle,point);
-    //rotationX(-upAngle,point);
-    
-
-
-    //translate back
-    //point.setw(1);
-    //translation(position, point);
-
-
-    //translate point relative to the cams position
-    //point.setw(1);
-    //vec4 orientation = vec4(position);
-    //orientation.sety(-position.y());
-    //translation(-1.0f*orientation, point);
 
     return entity(object);
 }
