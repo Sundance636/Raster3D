@@ -97,7 +97,7 @@ void mainLoop(SDL_Renderer *renderer) {
 
     u_int32_t frameStart = 0;
     
-    u_int32_t framerate = 1000.0f/60.0f;
+    float framerate = 1000.0f/60.0f;
     u_int32_t itt = 0;
     float totaltime = 0;
     
@@ -132,7 +132,7 @@ void mainLoop(SDL_Renderer *renderer) {
     }
     if(itt != 0) {
         std::cout << "Average Time to render: " << totaltime/itt << "ms" << std::endl;
-        std::cout << "Target: " << 1000.0f/60.0f << "ms\n" << std::endl;
+        std::cout << "Target: " << framerate << "ms\n" << std::endl;
 
     }
 
@@ -151,11 +151,10 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     //OPTIMIZE INTO ONE KERNEL CALL  LATER
     cam.viewTransformR(projection);
 
-    //calculate normals/back backface culling
+    //calculate normals/facing ratios for backface culling
     cam.faceCulling( facingRatios, testTri );
 
     cam.perspectiveProjectionR(projection);
-
 
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
@@ -163,32 +162,19 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
     
-    //calculating normals for each tri and drawing
+    //cull triangles facing away
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
-        /*
-        vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
-        eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
-        eyeLine = unit_vector4(eyeLine);
-        eyeLine.setx(-eyeLine.x());
-        eyeLine.setz(-eyeLine.z());
-        eyeLine.setw(0);
 
-        float view = dot_product4(testTri[i].getSurfaceNormal(), eyeLine);
-        */
         if( facingRatios[i] < 0.0) {
-                //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
-            
-            //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
 
-            SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
-            flatShading(renderer, projection[i]);
+            //SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
+            //flatShading(renderer, projection[i]);
 
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
 
         }
-        
     }
     
 }
@@ -256,15 +242,10 @@ bool Input(entity &test, camera &cam) {
                 test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
             
-
-            std::cout << "Point 1: " << test[0].getP1() << "\n";
-            std::cout << "Point 2: " << test[0].getP2() << "\n";
-            std::cout << "Point 3: " << test[0].getP3() << "\n";
             std::cout << "Look Angle: " << cam.getLookAngle() << "\n";
             std::cout << "Look Vec: " << cam.getLookVec() << "\n";
             std::cout << "Up Angle: " << cam.getUpAngle() << "\n";
             std::cout << "Up Vec: " << cam.getUpVec() << "\n";
-            //std::cout << "\n Surface Normal: " << test[0].getSurfaceNormal() << "\n";
             std::cout << "\n Camera Direction: " << cam.direction() << "\n";
             std::cout << "Camera Position: " << cam.getPosition() << "\n";
 

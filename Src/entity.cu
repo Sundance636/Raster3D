@@ -275,7 +275,7 @@ __global__ void cullingK( vec4 camPosition, triangle* tris, float* facingRatios,
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     
     if(idx < numOfTris) { //each triangle
-        vec4 eyeLine =  camPosition - tris[idx].getP3();
+        vec4 eyeLine =  vec4(camPosition) - tris[idx].getP3();//copy constructor cause my difference overload is weird
         eyeLine.sety(camPosition.y() -  -1.0f*tris[idx].getP3().y() );
         eyeLine = unit_vector4(eyeLine);
         eyeLine.setx(-eyeLine.x());
