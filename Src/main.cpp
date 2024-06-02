@@ -104,7 +104,7 @@ void mainLoop(SDL_Renderer *renderer) {
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
-    ship.loadObj("Models/sphere.obj");
+    ship.loadObj("Models/Sora.obj");
     
     ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
@@ -113,7 +113,8 @@ void mainLoop(SDL_Renderer *renderer) {
     u_int32_t frameStart = 0;
     
     u_int32_t framerate = 1000.0f/60.0f;
-
+    int itt = 0;
+    float totaltime = 0;
     
     while(!gQuit) {
 
@@ -137,9 +138,20 @@ void mainLoop(SDL_Renderer *renderer) {
 	        //std::cout << "Current FPS: " << 1000.0/elapsed << std::endl;
 
             frameStart = SDL_GetTicks();
+            float elapsed = (frameStart - frameEnd);
+            totaltime += elapsed;
+	        std::cout << "Rendered In: " << elapsed << "ms\n" << std::endl;
+            ++itt;
         }
 
     }
+    if(itt != 0) {
+        std::cout << "Average Time to render: " << totaltime/itt << "ms" << std::endl;
+        std::cout << "Target: " << 1000.0f/60.0f << "ms\n" << std::endl;
+
+    }
+
+
 
 }
 
@@ -150,6 +162,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
 
     entity projection = entity(testTri);
 
+    //OPTIMIZE INTO ONE KERNEL CALL  LATER
     cam.viewTransformR(projection);
     cam.perspectiveProjectionR(projection);
 
@@ -160,6 +173,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
     
+    //calculating normals for each tri and drawing
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
         
         vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
@@ -173,19 +187,6 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
         
         if( view < 0.0) {
                 //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
-
-            for(int i = 0; i < testTri.getTriCount(); i++) {
-                eyeLine =  cam.getPosition( ) - testTri[i].getP3();
-                
-                eyeLine = unit_vector4(eyeLine);
-                eyeLine.setx(-eyeLine.x());
-                eyeLine.setz(-eyeLine.z());
-                eyeLine.setw(0);
-
-                    //std::cout << "\n Surface Normal: " << i << testTri[i].getSurfaceNormal();
-                    //std::cout << "\n Eye vec: " << i << eyeLine;
-
-                }
             
             //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
 

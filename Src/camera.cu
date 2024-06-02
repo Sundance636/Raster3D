@@ -346,7 +346,7 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 __host__ entity camera::viewTransformR(entity& object) {
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
-    std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
+    //std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
     //trisArray[0].setP1(vec4(69,69,69,69));
 
     triangle* d_tris = nullptr;
