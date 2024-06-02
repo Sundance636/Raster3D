@@ -39,7 +39,7 @@ __global__ void scaleK(vec4 inputVec, triangle*, int);
 __global__ void translationK(vec4 inputVec, triangle*, int);
 __global__ void rotationXK(float radians,  triangle* , int );
 __global__ void rotationYK(float radians, triangle*, int);
-
+__global__ void cullingK( vec4, triangle*, float*,int);
 
 
 #endif

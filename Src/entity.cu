@@ -270,6 +270,24 @@ __global__ void rotationYK(float radians,  triangle* tris, int numOfTris) {
 
 }
 
+__global__ void cullingK( vec4 camPosition, triangle* tris, float* facingRatios, int numOfTris) {
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if(idx < numOfTris) { //each triangle
+        vec4 eyeLine =  vec4(camPosition) - tris[idx].getP3();//copy constructor cause my difference overload is weird
+        eyeLine.sety(camPosition.y() -  -1.0f*tris[idx].getP3().y() );
+        eyeLine = unit_vector4(eyeLine);
+        eyeLine.setx(-eyeLine.x());
+        eyeLine.setz(-eyeLine.z());
+        eyeLine.setw(0);
+
+        facingRatios[idx] = dot_product4(tris[idx].getSurfaceNormal(), eyeLine);
+
+    } 
+}
+
+
 __host__ __device__ void entity::rotateEntityZ(float angle) {
     //vectorize later for cuda
     for(int i = 0; i < triCount; i++ ) {

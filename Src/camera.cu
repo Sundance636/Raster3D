@@ -346,7 +346,7 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 __host__ entity camera::viewTransformR(entity& object) {
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
-    std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
+    //std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
     //trisArray[0].setP1(vec4(69,69,69,69));
 
     triangle* d_tris = nullptr;
@@ -386,4 +386,34 @@ __host__ entity camera::viewTransformR(entity& object) {
     d_tris = nullptr;
 
     return entity(object);
+}
+
+__host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object) {
+    triangle* trisArray = object.getTriangles();//pass vec as an array
+    float* faceArray = faceRatios.data();
+
+    triangle* d_tris = nullptr;
+    float* d_facenorm = nullptr;
+
+    checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_facenorm, object.getTriCount() * sizeof(float)));
+
+
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
+    
+
+    cullingK<<<numBlocks, blockSize>>>(this->getPosition(),d_tris,d_facenorm,object.getTriCount()); 
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());    
+
+    checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, object.getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_facenorm));
+    checkCudaErrors(cudaFree(d_tris));
+
+    d_tris = nullptr;
+    d_facenorm = nullptr;
 }

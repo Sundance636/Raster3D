@@ -3,14 +3,12 @@
 //Branch has no hardware acceleration
 int main() {
 
+//Initialize SDL stuff
+    SDL_Window *applicationWindow;
+    SDL_Renderer* renderer;
     const u_int32_t WIDTH = 640;
     const u_int32_t HEIGHT = 480;
 
-    
-
-    //Initialize SDL stuff
-    SDL_Window *applicationWindow;
-    SDL_Renderer* renderer;
 
     if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) { 
         printf("Could not initialize SDL: %s.\n", SDL_GetError());
@@ -34,21 +32,8 @@ int main() {
         exit(2);
     }
 
-    // allocate space for Frame Buffer
-
-    
-
-    // Render our buffer
-    //renderBuffer(d_fb, tx, ty, d_world);
-    //transferMem(h_fb, d_fb);//transfer mem from device to host
-   /* */
-
     mainLoop(renderer);
 
-    //deallocates
-    //freeGPU(d_fb,d_list,d_world);
-    //free(h_fb);
-    
 
     //cleaning and quit routine
     SDL_DestroyRenderer(renderer);
@@ -105,7 +90,7 @@ void mainLoop(SDL_Renderer *renderer) {
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
-    ship.loadObj("Models/sphere.obj");
+    ship.loadObj("Models/Sora.obj");
     
     ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
@@ -113,8 +98,9 @@ void mainLoop(SDL_Renderer *renderer) {
 
     u_int32_t frameStart = 0;
     
-    u_int32_t framerate = 1000.0f/60.0f;
-
+    float framerate = 1000.0f/60.0f;
+    u_int32_t itt = 0;
+    float totaltime = 0;
     
     while(!gQuit) {
 
@@ -138,9 +124,20 @@ void mainLoop(SDL_Renderer *renderer) {
 	        //std::cout << "Current FPS: " << 1000.0/elapsed << std::endl;
 
             frameStart = SDL_GetTicks();
+            float elapsed = (frameStart - frameEnd);
+            totaltime += elapsed;
+	        std::cout << "Rendered In: " << elapsed << "ms\n" << std::endl;
+            ++itt;
         }
 
     }
+    if(itt != 0) {
+        std::cout << "Average Time to render: " << totaltime/itt << "ms" << std::endl;
+        std::cout << "Target: " << framerate << "ms\n" << std::endl;
+
+    }
+
+
 
 }
 
@@ -148,12 +145,17 @@ void mainLoop(SDL_Renderer *renderer) {
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     int WIDTH = 640;
     int HEIGHT = 480;
+    std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount());
 
     entity projection = entity(testTri);
 
+    //OPTIMIZE INTO ONE KERNEL CALL  LATER
     cam.viewTransformR(projection);
-    cam.perspectiveProjectionR(projection);
 
+    //calculate normals/facing ratios for backface culling
+    cam.faceCulling( facingRatios, testTri );
+
+    cam.perspectiveProjectionR(projection);
 
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
@@ -161,44 +163,19 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
     
     
+    //cull triangles facing away
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
-        
-        vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
-        eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
-        eyeLine = unit_vector4(eyeLine);
-        eyeLine.setx(-eyeLine.x());
-        eyeLine.setz(-eyeLine.z());
-        eyeLine.setw(0);
 
-        float view = dot_product4(testTri[i].getSurfaceNormal(), eyeLine);
-        
-        if( view < 0.0) {
-                //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
+        if( facingRatios[i] < 0.0) {
 
-            for(int i = 0; i < testTri.getTriCount(); i++) {
-                eyeLine =  cam.getPosition( ) - testTri[i].getP3();
-                
-                eyeLine = unit_vector4(eyeLine);
-                eyeLine.setx(-eyeLine.x());
-                eyeLine.setz(-eyeLine.z());
-                eyeLine.setw(0);
-
-                    //std::cout << "\n Surface Normal: " << i << testTri[i].getSurfaceNormal();
-                    //std::cout << "\n Eye vec: " << i << eyeLine;
-
-                }
-            
-            //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
-
-            SDL_SetRenderDrawColor(renderer, 150 * -view, 150*-view, 150*-view,  150*-view);//white line
-            flatShading(renderer, projection[i]);
+            //SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
+            //flatShading(renderer, projection[i]);
 
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
 
         }
-        
     }
     
 }
@@ -266,23 +243,14 @@ bool Input(entity &test, camera &cam) {
                 test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
             
-
-            std::cout << "Point 1: " << test[0].getP1() << "\n";
-            std::cout << "Point 2: " << test[0].getP2() << "\n";
-            std::cout << "Point 3: " << test[0].getP3() << "\n";
             std::cout << "Look Angle: " << cam.getLookAngle() << "\n";
             std::cout << "Look Vec: " << cam.getLookVec() << "\n";
             std::cout << "Up Angle: " << cam.getUpAngle() << "\n";
             std::cout << "Up Vec: " << cam.getUpVec() << "\n";
-            //std::cout << "\n Surface Normal: " << test[0].getSurfaceNormal() << "\n";
             std::cout << "\n Camera Direction: " << cam.direction() << "\n";
             std::cout << "Camera Position: " << cam.getPosition() << "\n";
 
-            for(int i = 0; i < test.getTriCount(); i++) {
-                //std::cout << "\n Surface Normal: " << test[i].getSurfaceNormal();
-            }
-
-            printf("KeyDown\n");
+            std::cout << "KeyDown\n";
         }
     }
     return false;
