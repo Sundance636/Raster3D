@@ -2,14 +2,12 @@
 
 int main() {
 
+//Initialize SDL stuff
+    SDL_Window *applicationWindow;
+    SDL_Renderer* renderer;
     const u_int32_t WIDTH = 640;
     const u_int32_t HEIGHT = 480;
 
-    
-
-    //Initialize SDL stuff
-    SDL_Window *applicationWindow;
-    SDL_Renderer* renderer;
 
     if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) { 
         printf("Could not initialize SDL: %s.\n", SDL_GetError());
@@ -33,21 +31,8 @@ int main() {
         exit(2);
     }
 
-    // allocate space for Frame Buffer
-
-    
-
-    // Render our buffer
-    //renderBuffer(d_fb, tx, ty, d_world);
-    //transferMem(h_fb, d_fb);//transfer mem from device to host
-   /* */
-
     mainLoop(renderer);
 
-    //deallocates
-    //freeGPU(d_fb,d_list,d_world);
-    //free(h_fb);
-    
 
     //cleaning and quit routine
     SDL_DestroyRenderer(renderer);
@@ -113,7 +98,7 @@ void mainLoop(SDL_Renderer *renderer) {
     u_int32_t frameStart = 0;
     
     u_int32_t framerate = 1000.0f/60.0f;
-    int itt = 0;
+    u_int32_t itt = 0;
     float totaltime = 0;
     
     while(!gQuit) {
@@ -159,11 +144,16 @@ void mainLoop(SDL_Renderer *renderer) {
 void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     int WIDTH = 640;
     int HEIGHT = 480;
+    std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount());
 
     entity projection = entity(testTri);
 
     //OPTIMIZE INTO ONE KERNEL CALL  LATER
     cam.viewTransformR(projection);
+
+    //calculate normals/back backface culling
+    cam.faceCulling( facingRatios, testTri );
+
     cam.perspectiveProjectionR(projection);
 
 
@@ -175,7 +165,7 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     
     //calculating normals for each tri and drawing
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
-        
+        /*
         vec4 eyeLine =  cam.getPosition( ) - testTri[i].getP3();
         eyeLine.sety(cam.getPosition().y() -  -1.0f*testTri[i].getP3().y() );
         eyeLine = unit_vector4(eyeLine);
@@ -184,13 +174,13 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
         eyeLine.setw(0);
 
         float view = dot_product4(testTri[i].getSurfaceNormal(), eyeLine);
-        
-        if( view < 0.0) {
+        */
+        if( facingRatios[i] < 0.0) {
                 //std::cout << "\n Surface Normal skip: " << testTri[i].getSurfaceNormal() << "\n";
             
             //std::cout << "\n Face Ratio" << i << ": "<< view << '\n';
 
-            SDL_SetRenderDrawColor(renderer, 150 * -view, 150*-view, 150*-view,  150*-view);//white line
+            SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
             flatShading(renderer, projection[i]);
 
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
@@ -278,11 +268,7 @@ bool Input(entity &test, camera &cam) {
             std::cout << "\n Camera Direction: " << cam.direction() << "\n";
             std::cout << "Camera Position: " << cam.getPosition() << "\n";
 
-            for(int i = 0; i < test.getTriCount(); i++) {
-                //std::cout << "\n Surface Normal: " << test[i].getSurfaceNormal();
-            }
-
-            printf("KeyDown\n");
+            std::cout << "KeyDown\n";
         }
     }
     return false;
