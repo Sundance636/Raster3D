@@ -89,7 +89,7 @@ void mainLoop(SDL_Renderer *renderer) {
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
-    ship.loadObj("Models/Sora.obj");
+    ship.loadObj("Models/Sora2.obj");
     
     ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
@@ -100,6 +100,11 @@ void mainLoop(SDL_Renderer *renderer) {
     float framerate = 1000.0f/60.0f;
     u_int32_t itt = 0;
     float totaltime = 0;
+
+    int WIDTH = 640;
+    int HEIGHT = 480; 
+
+    std::vector<std::vector<float>> depthBuffer;// = std::vector<std::vector<int>>(HEIGHT);
     
     while(!gQuit) {
 
@@ -111,10 +116,12 @@ void mainLoop(SDL_Renderer *renderer) {
         if(frameEnd - frameStart >= framerate) {
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
+
+            depthBuffer = std::vector<std::vector<float>>(HEIGHT, std::vector<float>(WIDTH, SDL_MAX_SINT32));
             
-            Draw(renderer, plane, cam);
+            Draw(renderer, plane, cam, depthBuffer);
             //Draw(renderer,testTriangle, cam);
-            Draw(renderer, ship, cam);
+            Draw(renderer, ship, cam, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
@@ -141,7 +148,7 @@ void mainLoop(SDL_Renderer *renderer) {
 }
 
 
-void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
+void Draw(SDL_Renderer *renderer,entity testTri, camera cam, std::vector<std::vector<float>> depthBuffer) {
     int WIDTH = 640;
     int HEIGHT = 480;
     std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount());

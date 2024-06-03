@@ -1,5 +1,8 @@
 .vscode
 Models/Sora.obj
+Models/JackFrost.obj
+Models/Jotaro.obj
+Models/Sora2.obj
 Engine
 *.o
 debug.txt
