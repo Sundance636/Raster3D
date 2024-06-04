@@ -107,7 +107,7 @@ void mainLoop(SDL_Renderer *renderer) {
     SDL_Texture* texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,WIDTH,HEIGHT);
 
 
-    u_int32_t* frameBuffer = new uint32_t[WIDTH * HEIGHT];
+    u_int32_t* frameBuffer = new u_int32_t[WIDTH * HEIGHT];
     float* depthBuffer = new float[WIDTH * HEIGHT];
     
     while(!gQuit) {
@@ -200,9 +200,13 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
 
             float boxMinY = std::min(std::min(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
             float boxMaxY = std::max(std::max(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
-
+            
+            //std::cout << "Ratio:" << facingRatios[i] << "\n";
             //test all the pixels in that bounding box for z values
-            projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer);
+            projection[i].setColour(255u,150u,150u,150u);
+            std::cout << "Colour:" << projection[i].getColour() << "\n";
+
+            projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer, -facingRatios[i]);
             
             //rendering bounding box
             //SDL_RenderDrawLine(renderer,boxMinX,boxMinY,boxMaxX, boxMinY);
@@ -219,7 +223,7 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
     }
 
     //texture stuff
-    SDL_UpdateTexture(texture,nullptr,frameBuffer, WIDTH* sizeof(uint32_t));
+    SDL_UpdateTexture(texture,nullptr,frameBuffer, WIDTH* sizeof(u_int32_t));
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 }
 

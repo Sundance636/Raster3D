@@ -28,7 +28,8 @@ class triangle {
         __host__ __device__ void setP2(vec4);
         __host__ __device__ void setP3(vec4);
         __host__ __device__ vec4 getSurfaceNormal();
-        __host__ __device__ uint32_t getColour();
+        __host__ __device__ void setColour(u_int32_t A,u_int32_t R,u_int32_t G,u_int32_t B);
+        __host__ __device__ u_int32_t getColour();
 
 
         __host__ __device__ void translate(vec4);
@@ -37,9 +38,9 @@ class triangle {
         __host__ __device__ void rotateZ(float);
         __host__ __device__ void calculateSurfaceNormal();
 
-        __host__ __device__ bool hitTest(float, float,float,float, int, int,u_int32_t* frameBuffer, float* depthBuffer);
+        __host__ __device__ bool hitTest(float, float,float,float, int, int,u_int32_t* frameBuffer, float* depthBuffer, float facingRatio);
         __host__ __device__ bool pixelInTri(int screenX, int screenY);
-        __host__ __device__ void setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer);
+        __host__ __device__ void setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer, float facingRatio);
 
 };
 

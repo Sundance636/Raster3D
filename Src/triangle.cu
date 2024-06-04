@@ -34,7 +34,12 @@ __host__ __device__ vec4 triangle::getSurfaceNormal() {
     return normal;
 }
 
-__host__ __device__ uint32_t triangle::getColour() {
+__host__ __device__ void triangle::setColour(u_int32_t A, u_int32_t R, u_int32_t G, u_int32_t B) {
+    this->colour = (A << 24) | ((R << 16 )) | ((G << 8)) | B;
+    //this->colour = R << 16;
+}
+
+__host__ __device__ u_int32_t triangle::getColour() {
     return colour;
 }
 
@@ -86,7 +91,7 @@ __host__ __device__ void triangle::calculateSurfaceNormal() {
     normal = unit_vector4(normal);
 }
 
-__host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float boxMinY, float boxMaxY, int WIDTH, int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer) {
+__host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float boxMinY, float boxMaxY, int WIDTH, int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer, float facingRatio) {
     int xMin = std::max(0, std::min(WIDTH - 1, (int)std::floor(boxMinX)));
     int yMin = std::max(0, std::min(HEIGHT - 1, (int)std::floor(boxMinY)));
     int xMax = std::max(0, std::min(WIDTH - 1, (int)std::floor(boxMaxX)));
@@ -104,7 +109,7 @@ __host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float b
             if (pixelInTri(x, y)) {
 
                 float depth = w0 * this->point1.z() + w1 * this->point2.z() + w2 * this->point3.z();
-                setPixel(x,y,depth, WIDTH, HEIGHT, frameBuffer,depthBuffer);
+                setPixel(x,y,depth, WIDTH, HEIGHT, frameBuffer,depthBuffer, facingRatio);
             }
         }
     }
@@ -125,11 +130,27 @@ __host__ __device__ float edgeFunction( const vec4 a, const vec4 b, const vec4 c
     return (vec4(c).x() - a.x()) * (vec4(b).y() - a.y()) - (vec4(c).y() - a.y()) * (vec4(b).x() - a.x());
 }
 
-__host__ __device__ void triangle::setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT, u_int32_t* frameBuffer, float* depthBuffer ) {
+__host__ __device__ void triangle::setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT, u_int32_t* frameBuffer, float* depthBuffer, float facingRatio ) {
     if (screenX >= 0 && screenX < WIDTH && screenY >= 0 && screenY < HEIGHT) {
             int index = screenY * WIDTH + screenX;
             if (depth < depthBuffer[index]) {
-                frameBuffer[index] = this->getColour();
+                uint32_t col = this->colour;
+                col << 8;
+                col >> 24;
+                u_int32_t colR = col;
+
+                col = this->colour;
+                col << 16;
+                col >> 24;
+                u_int32_t colG = col;
+
+                col = this->colour;
+                col << 24;
+                col >> 24;
+                u_int32_t colB = col;
+
+                
+                frameBuffer[index] = 150 * facingRatio;//(255u << 24) | (((u_int32_t)(colR * facingRatio) << 16 )) | ( ( (u_int32_t)(colG * facingRatio) << 8) ) | (u_int32_t)(colB * facingRatio);
                 depthBuffer[index] = depth;
             }
         }
