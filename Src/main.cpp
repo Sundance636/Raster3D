@@ -102,9 +102,13 @@ void mainLoop(SDL_Renderer *renderer) {
     float totaltime = 0;
 
     int WIDTH = 640;
-    int HEIGHT = 480; 
+    int HEIGHT = 480;
 
-    std::vector<std::vector<float>> depthBuffer;// = std::vector<std::vector<int>>(HEIGHT);
+    SDL_Texture* texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,WIDTH,HEIGHT);
+
+
+    u_int32_t* frameBuffer = new uint32_t[WIDTH * HEIGHT];
+    float* depthBuffer = new float[WIDTH * HEIGHT];
     
     while(!gQuit) {
 
@@ -117,11 +121,15 @@ void mainLoop(SDL_Renderer *renderer) {
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
 
-            depthBuffer = std::vector<std::vector<float>>(HEIGHT, std::vector<float>(WIDTH, SDL_MAX_SINT32));
-            
-            Draw(renderer, plane, cam, depthBuffer);
+            //presumably clean buffers each frame
+            for(int i = 0; i < WIDTH * HEIGHT; i++) {
+                frameBuffer[i] = 0u; // Black color
+                depthBuffer[i] = std::numeric_limits<float>::infinity();
+            }
+
+            Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
             //Draw(renderer,testTriangle, cam);
-            Draw(renderer, ship, cam, depthBuffer);
+            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
@@ -143,12 +151,15 @@ void mainLoop(SDL_Renderer *renderer) {
 
     }
 
+    delete frameBuffer;
+    delete depthBuffer;
+
 
 
 }
 
 
-void Draw(SDL_Renderer *renderer,entity testTri, camera cam, std::vector<std::vector<float>> depthBuffer) {
+void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera cam, u_int32_t* frameBuffer, float* depthBuffer) {
     int WIDTH = 640;
     int HEIGHT = 480;
     std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount());
@@ -167,6 +178,12 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam, std::vector<std::ve
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
+
+    //LATER
+
+    //paralellize getting bounding boxes (only for negative FR)
+
+    //for each tris bounding box then test its pixels if facing
     
     
     //cull triangles facing away
@@ -177,13 +194,33 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam, std::vector<std::ve
             //SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
             //flatShading(renderer, projection[i]);
 
+            //get bounding box for current triangle
+            float boxMinX = std::min(std::min(projection[i].getP1().x(),projection[i].getP2().x()),projection[i].getP3().x());
+            float boxMaxX = std::max(std::max(projection[i].getP1().x(),projection[i].getP2().x()),projection[i].getP3().x());
+
+            float boxMinY = std::min(std::min(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
+            float boxMaxY = std::max(std::max(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
+
+            //test all the pixels in that bounding box for z values
+            projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer);
+            
+            //rendering bounding box
+            //SDL_RenderDrawLine(renderer,boxMinX,boxMinY,boxMaxX, boxMinY);
+            //SDL_RenderDrawLine(renderer,boxMaxX,boxMinY,boxMaxX, boxMaxY);
+
+
+            //wireframe
+            /*
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
-
+            */
         }
     }
-    
+
+    //texture stuff
+    SDL_UpdateTexture(texture,nullptr,frameBuffer, WIDTH* sizeof(uint32_t));
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 }
 
 bool Input(entity &test, camera &cam) {

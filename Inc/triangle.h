@@ -3,6 +3,7 @@
 
 #include "vec4.h"
 #include "transformation.h"
+#include <vector>
 
 
 class triangle {
@@ -13,6 +14,7 @@ class triangle {
 
         vec4 normal;
 
+        //RBG bitshift
         u_int32_t colour;
 
     public:
@@ -26,6 +28,8 @@ class triangle {
         __host__ __device__ void setP2(vec4);
         __host__ __device__ void setP3(vec4);
         __host__ __device__ vec4 getSurfaceNormal();
+        __host__ __device__ uint32_t getColour();
+
 
         __host__ __device__ void translate(vec4);
         __host__ __device__ void rotateX(float);
@@ -33,7 +37,13 @@ class triangle {
         __host__ __device__ void rotateZ(float);
         __host__ __device__ void calculateSurfaceNormal();
 
+        __host__ __device__ bool hitTest(float, float,float,float, int, int,u_int32_t* frameBuffer, float* depthBuffer);
+        __host__ __device__ bool pixelInTri(int screenX, int screenY);
+        __host__ __device__ void setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer);
+
 };
+
+__host__ __device__ float edgeFunction( const vec4 a, const vec4 b, const vec4 c);
 
 
 #endif
