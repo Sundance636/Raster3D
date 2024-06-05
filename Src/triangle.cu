@@ -135,22 +135,21 @@ __host__ __device__ void triangle::setPixel(int screenX, int screenY, float dept
             int index = screenY * WIDTH + screenX;
             if (depth < depthBuffer[index]) {
                 uint32_t col = this->colour;
-                col << 8;
-                col >> 24;
-                u_int32_t colR = col;
 
-                col = this->colour;
-                col << 16;
-                col >> 24;
-                u_int32_t colG = col;
+                uint8_t A = (col >> 24) & 0xFF;
+                uint8_t R = (col >> 16) & 0xFF;
+                uint8_t G = (col >> 8) & 0xFF;
+                uint8_t B = col & 0xFF;
 
-                col = this->colour;
-                col << 24;
-                col >> 24;
-                u_int32_t colB = col;
+                R = (uint8_t)(R * facingRatio);
+                G = (uint8_t)(G * facingRatio);
+                B = (uint8_t)(B * facingRatio);
+                A = (uint8_t)(255 * facingRatio);
 
+
+                uint32_t color = (A << 24) | (R << 16) | (G << 8) | B;
                 
-                frameBuffer[index] = 150 * facingRatio;//(255u << 24) | (((u_int32_t)(colR * facingRatio) << 16 )) | ( ( (u_int32_t)(colG * facingRatio) << 8) ) | (u_int32_t)(colB * facingRatio);
+                frameBuffer[index] = color;
                 depthBuffer[index] = depth;
             }
         }
