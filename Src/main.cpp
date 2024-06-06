@@ -127,9 +127,9 @@ void mainLoop(SDL_Renderer *renderer) {
                 depthBuffer[i] = std::numeric_limits<float>::infinity();
             }
 
-            //Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
+            Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
             Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
-            //Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
+            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);

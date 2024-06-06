@@ -108,7 +108,9 @@ __host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float b
 
             if (pixelInTri(x, y)) {
 
-                float depth = w0 * this->point1.z() + w1 * this->point2.z() + w2 * this->point3.z();
+
+                //normalize depth buffer values
+                float depth = (w0 * this->point1.z() + w1 * this->point2.z() + w2 * this->point3.z())/(w0 + w1 + w2);
                 setPixel(x,y,depth, WIDTH, HEIGHT, frameBuffer,depthBuffer, facingRatio);
             }
         }
