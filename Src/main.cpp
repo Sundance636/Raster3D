@@ -127,9 +127,9 @@ void mainLoop(SDL_Renderer *renderer) {
                 depthBuffer[i] = std::numeric_limits<float>::infinity();
             }
 
-            Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
-            //Draw(renderer,testTriangle, cam);
-            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
+            //Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
+            Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
+            //Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
@@ -174,6 +174,17 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
 
     cam.perspectiveProjectionR(projection);
 
+/*
+    std::cout << "NDC: " << projection[0].getP1() << "\n";
+    std::cout << "NDC: " << projection[0].getP2() << "\n";
+    std::cout << "NDC: " << projection[0].getP3() << "\n";
+    std::cout << "NDC: " << projection[1].getP1() << "\n";
+    std::cout << "NDC: " << projection[1].getP2() << "\n";
+    std::cout << "NDC: " << projection[1].getP3() << "\n";
+    std::cout << "NDC: " << projection[2].getP1() << "\n";
+    std::cout << "NDC: " << projection[2].getP2() << "\n";
+    std::cout << "NDC: " << projection[2].getP3() << "\n";
+*/
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
@@ -204,7 +215,7 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
             //std::cout << "Ratio:" << facingRatios[i] << "\n";
             //test all the pixels in that bounding box for z values
             projection[i].setColour(255u,150u,150u,150u);
-            std::cout << "Colour:" << projection[i].getColour() << "\n";
+            //std::cout << "Colour:" << projection[i].getColour() << "\n";
 
             projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer, -facingRatios[i]);
             

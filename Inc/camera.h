@@ -76,7 +76,7 @@ class camera {
 
 };
 
-__global__ void projectionK(float, float , triangle*, int);
+__global__ void projectionK(float, float, float, float , float, float, triangle*, int);
 
 
 #endif

@@ -2,10 +2,10 @@
 
 __host__ __device__ camera::camera() {
     //initialize default camera parameters
-         start = 0.01;//the near plane of the frustum
-         end = 1000;//far plane
+         start = 100;//the near plane of the frustum
+         end = 600;//far plane
 
-         topPlane = tan(M_PI_4/2.0f);
+         topPlane = tan(M_PI_4/2.0f) * start;
 
 
         //frustrum dimensions
@@ -77,7 +77,7 @@ __host__ entity camera::perspectiveProjectionR(entity &object) {
     int blockSize = 256;
     int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
 
-    projectionK<<<numBlocks, blockSize>>>(this->rightPlane, this->topPlane, d_tris, object.getTriCount());
+    projectionK<<<numBlocks, blockSize>>>(this->rightPlane, this->leftPlane, this->topPlane, this->bottomPlane, this->end , this->start, d_tris, object.getTriCount());
 
     checkCudaErrors (cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
@@ -88,15 +88,15 @@ __host__ entity camera::perspectiveProjectionR(entity &object) {
     return entity(object);
 }
 
-__global__ void projectionK(float rightPlane, float topPlane , triangle* tris, int numOfTris) {
+__global__ void projectionK(float rightPlane,float leftPlane, float topPlane, float bottomPlane, float farPlane, float nearPlane, triangle* tris, int numOfTris) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     
     if(idx < numOfTris) { //each triangle
         //symmetric viewing volume (probably correct i dunno?)
-        vec4 ProjMat[4] = { vec4(1.0f/rightPlane, 0.0f, 0.0f , 0.0f),
-                            vec4(0.0f, 1.0f/topPlane,0.0f, 0.0f),
-                            vec4(0.0f,0.0f,1.0f, 0.0f),
+        vec4 ProjMat[4] = { vec4(2*nearPlane/(rightPlane - leftPlane), 0.0f, (rightPlane + leftPlane)/(rightPlane - leftPlane) , 0.0f),
+                            vec4(0.0f, 2*nearPlane/(topPlane - bottomPlane),(topPlane+bottomPlane)/(topPlane-bottomPlane), 0.0f),
+                            vec4(0.0f,0.0f,((farPlane +nearPlane )/(farPlane-nearPlane)), -(2*farPlane* nearPlane/(farPlane-nearPlane))),
                             vec4(0.0f,0.0f,1.0f,0.0f)};
 
         vec4 points[3] = {tris[idx].getP1(), tris[idx].getP2(), tris[idx].getP3()};
