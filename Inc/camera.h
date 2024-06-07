@@ -57,6 +57,7 @@ class camera {
         __host__ __device__ vec4 viewTransform(vec4);
         __host__ entity viewTransformR(entity&);
         __host__ void faceCulling(std::vector<float>&faceRatios, entity&);
+        __host__ void frustumCulling(std::vector<float>&faceRatios, entity&);
 
 
         __host__ __device__ vec4 movecam(vec4);

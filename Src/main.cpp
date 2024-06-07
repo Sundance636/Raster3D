@@ -127,8 +127,8 @@ void mainLoop(SDL_Renderer *renderer) {
                 depthBuffer[i] = std::numeric_limits<float>::infinity();
             }
 
-            Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
-            Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
+            //Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
+            //Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
             Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
@@ -174,17 +174,17 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
 
     cam.perspectiveProjectionR(projection);
 
-/*
+    //frustum culling for each triangle
+    cam.frustumCulling(facingRatios, projection);
+
     std::cout << "NDC: " << projection[0].getP1() << "\n";
     std::cout << "NDC: " << projection[0].getP2() << "\n";
     std::cout << "NDC: " << projection[0].getP3() << "\n";
     std::cout << "NDC: " << projection[1].getP1() << "\n";
     std::cout << "NDC: " << projection[1].getP2() << "\n";
     std::cout << "NDC: " << projection[1].getP3() << "\n";
-    std::cout << "NDC: " << projection[2].getP1() << "\n";
-    std::cout << "NDC: " << projection[2].getP2() << "\n";
-    std::cout << "NDC: " << projection[2].getP3() << "\n";
-*/
+
+
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));

@@ -417,3 +417,18 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
     d_tris = nullptr;
     d_facenorm = nullptr;
 }
+
+__host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
+    for(int i = 0; i < object.getTriCount(); i++) {
+        if(std::min(object[i].getP1().y(),std::min(object[i].getP2().y(), object[i].getP3().y())) > 1.0 ) {
+            faceRatios[i] = 1.0;
+        } else if(std::min(object[i].getP1().x(),std::min(object[i].getP2().x(), object[i].getP3().x())) > 1.0 ) {
+            faceRatios[i] = 1.0;
+        } else if(std::max(object[i].getP1().z(),std::max(object[i].getP2().z(), object[i].getP3().z())) < 0.0 ) {
+            faceRatios[i] = 1.0;
+
+        } else if(std::min(object[i].getP1().z(),std::min(object[i].getP2().z(), object[i].getP3().z())) > 1.50) {
+            faceRatios[i] = 1.0;
+        }
+    }
+}
