@@ -162,7 +162,7 @@ void mainLoop(SDL_Renderer *renderer) {
 void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera cam, u_int32_t* frameBuffer, float* depthBuffer) {
     int WIDTH = 640;
     int HEIGHT = 480;
-    std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount());
+    std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount(),0);
 
     entity projection = entity(testTri);
 

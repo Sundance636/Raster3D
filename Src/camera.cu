@@ -7,16 +7,23 @@ __host__ __device__ camera::camera() {
 
          topPlane = tan(M_PI_4/2.0f) * start;
 
+        //vertical FOV (cross of top bottom)
+         vertFOV = M_PI_4; // 90 degrees
 
         //frustrum dimensions
          
         rightPlane = topPlane * (4.0f/3.0f);//4 by 3 aspect ratio
         leftPlane = -rightPlane;
+        left = vec4(-1,0,vertFOV/2,0);//just a direction
+        right = vec4(1,0,vertFOV/2,0);//just a direction
+
+        top = vec4(0,1,vertFOV/2,0);
+        bottom = vec4(0,1,vertFOV/2,0);
+
          //topPlane = 200;
          bottomPlane = -topPlane;
 
-        //vertical FOV (cross of top bottom)
-         vertFOV = M_PI_4; // 90 degrees
+        
 
          //initialize camera to origin for now
          position = vec4 (0,0,0,1);
@@ -420,6 +427,7 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 
 __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
     for(int i = 0; i < object.getTriCount(); i++) {
+        /*
         if(std::min(object[i].getP1().y(),std::min(object[i].getP2().y(), object[i].getP3().y())) > 1.0 ) {
             faceRatios[i] = 1.0;
         } else if(std::min(object[i].getP1().x(),std::min(object[i].getP2().x(), object[i].getP3().x())) > 1.0 ) {
@@ -429,6 +437,20 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
 
         } else if(std::min(object[i].getP1().z(),std::min(object[i].getP2().z(), object[i].getP3().z())) > 1.50) {
             faceRatios[i] = 1.0;
+        }*/
+
+        if(!(triInFrustum(object[i]))) {
+            faceRatios[i] = 1.0;
+
         }
     }
+}
+
+//camera function for checking if all the triangles of a given entity are even in the frustum
+//in  this case for clipping the entire tri
+
+__host__ bool camera::triInFrustum(triangle tri) {
+   
+   //if(tri.getP1() - ) 
+
 }
