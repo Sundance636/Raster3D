@@ -34,6 +34,14 @@ __host__ __device__ vec4 triangle::getSurfaceNormal() {
     return normal;
 }
 
+__host__ __device__ void triangle::setColour(u_int32_t A, u_int32_t R, u_int32_t G, u_int32_t B) {
+    this->colour = (A << 24) | ((R << 16 )) | ((G << 8)) | B;
+    //this->colour = R << 16;
+}
+
+__host__ __device__ u_int32_t triangle::getColour() {
+    return colour;
+}
 
 __host__ __device__ void triangle::translate(vec4 input) {
     
@@ -81,4 +89,70 @@ __host__ __device__ void triangle::calculateSurfaceNormal() {
     normal.setw(0); //direction not point
 
     normal = unit_vector4(normal);
+}
+
+__host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float boxMinY, float boxMaxY, int WIDTH, int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer, float facingRatio) {
+    int xMin = std::max(0, std::min(WIDTH - 1, (int)std::floor(boxMinX)));
+    int yMin = std::max(0, std::min(HEIGHT - 1, (int)std::floor(boxMinY)));
+    int xMax = std::max(0, std::min(WIDTH - 1, (int)std::floor(boxMaxX)));
+    int yMax = std::max(0, std::min(HEIGHT - 1, (int)std::floor(boxMaxY)));
+
+
+    //looping through the bounding box for given triangle
+    for (int y = yMin; y <= yMax; ++y) {
+        for (int x = xMin; x <= xMax; ++x) {
+            float w0 = edgeFunction(this->point2, this->point3, vec4(x, y,0, 0));
+            float w1 = edgeFunction(this->point3, this->point1, vec4(x, y,0, 0));
+            float w2 = edgeFunction(this->point1, this->point2, vec4(x, y,0, 0));
+
+
+            if (pixelInTri(x, y)) {
+
+
+                //normalize depth buffer values
+                float depth = (w0 * this->point1.z() + w1 * this->point2.z() + w2 * this->point3.z())/(w0 + w1 + w2);
+                setPixel(x,y,depth, WIDTH, HEIGHT, frameBuffer,depthBuffer, facingRatio);
+            }
+        }
+    }
+
+    return true;
+}
+
+__host__ __device__ bool triangle::pixelInTri(int screenX, int screenY) {
+    float w0 = edgeFunction(this->point2, this->point3, vec4(screenX, screenY,0, 0));
+    float w1 = edgeFunction(this->point3, this->point1, vec4(screenX, screenY,0, 0));
+    float w2 = edgeFunction(this->point1, this->point2, vec4(screenX, screenY,0, 0));
+
+
+    return w0 >= 0 && w1 >= 0 && w2 >= 0; 
+}
+
+__host__ __device__ float edgeFunction( const vec4 a, const vec4 b, const vec4 c) {
+    return (vec4(c).x() - a.x()) * (vec4(b).y() - a.y()) - (vec4(c).y() - a.y()) * (vec4(b).x() - a.x());
+}
+
+__host__ __device__ void triangle::setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT, u_int32_t* frameBuffer, float* depthBuffer, float facingRatio ) {
+    if (screenX >= 0 && screenX < WIDTH && screenY >= 0 && screenY < HEIGHT) {
+            int index = screenY * WIDTH + screenX;
+            if (depth < depthBuffer[index]) {
+                uint32_t col = this->colour;
+
+                uint8_t A = (col >> 24) & 0xFF;
+                uint8_t R = (col >> 16) & 0xFF;
+                uint8_t G = (col >> 8) & 0xFF;
+                uint8_t B = col & 0xFF;
+
+                R = (uint8_t)(R * facingRatio);
+                G = (uint8_t)(G * facingRatio);
+                B = (uint8_t)(B * facingRatio);
+                A = (uint8_t)(255 * facingRatio);
+
+
+                uint32_t color = (A << 24) | (R << 16) | (G << 8) | B;
+                
+                frameBuffer[index] = color;
+                depthBuffer[index] = depth;
+            }
+        }
 }

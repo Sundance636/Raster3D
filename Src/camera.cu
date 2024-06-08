@@ -2,21 +2,28 @@
 
 __host__ __device__ camera::camera() {
     //initialize default camera parameters
-         start = 0.01;//the near plane of the frustum
-         end = 1000;//far plane
+         start = 100;//the near plane of the frustum
+         end = 600;//far plane
 
-         topPlane = tan(M_PI_4/2.0f);
+         topPlane = tan(M_PI_4/2.0f) * start;
 
+        //vertical FOV (cross of top bottom)
+         vertFOV = M_PI_4; // 90 degrees
 
         //frustrum dimensions
          
         rightPlane = topPlane * (4.0f/3.0f);//4 by 3 aspect ratio
         leftPlane = -rightPlane;
+        left = vec4(-1,0,vertFOV/2,0);//just a direction
+        right = vec4(1,0,vertFOV/2,0);//just a direction
+
+        top = vec4(0,1,tan(vertFOV/2),0);
+        bottom = vec4(0,-1,tan(vertFOV/2),0);
+
          //topPlane = 200;
          bottomPlane = -topPlane;
 
-        //vertical FOV (cross of top bottom)
-         vertFOV = M_PI_4; // 90 degrees
+        
 
          //initialize camera to origin for now
          position = vec4 (0,0,0,1);
@@ -77,7 +84,7 @@ __host__ entity camera::perspectiveProjectionR(entity &object) {
     int blockSize = 256;
     int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
 
-    projectionK<<<numBlocks, blockSize>>>(this->rightPlane, this->topPlane, d_tris, object.getTriCount());
+    projectionK<<<numBlocks, blockSize>>>(this->rightPlane, this->leftPlane, this->topPlane, this->bottomPlane, this->end , this->start, d_tris, object.getTriCount());
 
     checkCudaErrors (cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
@@ -88,15 +95,15 @@ __host__ entity camera::perspectiveProjectionR(entity &object) {
     return entity(object);
 }
 
-__global__ void projectionK(float rightPlane, float topPlane , triangle* tris, int numOfTris) {
+__global__ void projectionK(float rightPlane,float leftPlane, float topPlane, float bottomPlane, float farPlane, float nearPlane, triangle* tris, int numOfTris) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     
     if(idx < numOfTris) { //each triangle
         //symmetric viewing volume (probably correct i dunno?)
-        vec4 ProjMat[4] = { vec4(1.0f/rightPlane, 0.0f, 0.0f , 0.0f),
-                            vec4(0.0f, 1.0f/topPlane,0.0f, 0.0f),
-                            vec4(0.0f,0.0f,1.0f, 0.0f),
+        vec4 ProjMat[4] = { vec4(2*nearPlane/(rightPlane - leftPlane), 0.0f, (rightPlane + leftPlane)/(rightPlane - leftPlane) , 0.0f),
+                            vec4(0.0f, 2*nearPlane/(topPlane - bottomPlane),(topPlane+bottomPlane)/(topPlane-bottomPlane), 0.0f),
+                            vec4(0.0f,0.0f,((farPlane +nearPlane )/(farPlane-nearPlane)), -(2*farPlane* nearPlane/(farPlane-nearPlane))),
                             vec4(0.0f,0.0f,1.0f,0.0f)};
 
         vec4 points[3] = {tris[idx].getP1(), tris[idx].getP2(), tris[idx].getP3()};
@@ -416,4 +423,85 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 
     d_tris = nullptr;
     d_facenorm = nullptr;
+}
+
+__host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
+    for(int i = 0; i < object.getTriCount(); i++) {
+        //evaluate bound
+        
+        //for top
+        float topBound1 = tan(vertFOV/2) * object[i].getP1().z();// + object[i].getP1().z()/ 60.0);//margin of erro
+        float topBound2 = tan(vertFOV/2) * object[i].getP2().z();// + object[i].getP2().z()/ 60.0);//margin of erro
+        float topBound3 = tan(vertFOV/2) * object[i].getP3().z();// + object[i].getP3().z()/ 60.0);//margin of erro
+
+        float bottomBound1 = -tan(vertFOV/2) * object[i].getP1().z();
+        float bottomBound2 = -tan(vertFOV/2) * object[i].getP2().z();
+        float bottomBound3 = -tan(vertFOV/2) * object[i].getP3().z();
+
+
+        //change to cull only if all point are out of bounds
+        if((object[i].getP1().y() > topBound1) && (object[i].getP2().y() > topBound2) &&  object[i].getP3().y() > topBound3  ) {//if above frustum cull
+            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
+        
+            faceRatios[i] = 1.0;
+
+        }
+       if( (object[i].getP1().y() < bottomBound1) && (object[i].getP2().y() < bottomBound2) &&  object[i].getP3().y() < bottomBound3  ) {//if below frustum cull
+            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
+        
+            faceRatios[i] = 1.0;
+
+        }
+        if( std::max( std::max((vec4(this->right) - object[i].getP1()).x(),
+        (vec4(this->right) - object[i].getP2()).x()),
+        (vec4(this->right) - object[i].getP3() ).x() ) < 0.0) {//if to the right of frustum
+            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        if( std::min( std::min((vec4(this->left) - object[i].getP1()).x(),
+        (vec4(this->left) - object[i].getP2()).x()),
+        (vec4(this->left) - object[i].getP3() ).x() ) > 0.0) {//if left of frustum cull
+            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        if( std::max( std::max(object[i].getP1().z(),
+        (object[i].getP2().z())),
+        (object[i].getP3().z() )) < this->start) {//if too close to frustum
+            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
+        
+            faceRatios[i] = 1.0;
+
+        }
+        if( std::min( std::min(object[i].getP1().z(),
+        (object[i].getP2().z())),
+        (object[i].getP3() ).z())  > 1.0) {//if too far from frustum
+            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        
+        
+
+
+    }
+}
+
+//camera function for checking if all the triangles of a given entity are even in the frustum
+//in  this case for clipping the entire tri
+
+__host__ bool camera::triInFrustum(triangle tri) {
+   
+   //if(tri.getP1() - ) 
+
 }

@@ -57,6 +57,9 @@ class camera {
         __host__ __device__ vec4 viewTransform(vec4);
         __host__ entity viewTransformR(entity&);
         __host__ void faceCulling(std::vector<float>&faceRatios, entity&);
+        __host__ void frustumCulling(std::vector<float>&faceRatios, entity&);
+        __host__ bool triInFrustum(triangle tri);
+
 
 
         __host__ __device__ vec4 movecam(vec4);
@@ -76,7 +79,7 @@ class camera {
 
 };
 
-__global__ void projectionK(float, float , triangle*, int);
+__global__ void projectionK(float, float, float, float , float, float, triangle*, int);
 
 
 #endif

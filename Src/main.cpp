@@ -90,7 +90,7 @@ void mainLoop(SDL_Renderer *renderer) {
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
-    ship.loadObj("Models/Sora.obj");
+    ship.loadObj("Models/Sora2.obj");
     
     ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
@@ -101,6 +101,15 @@ void mainLoop(SDL_Renderer *renderer) {
     float framerate = 1000.0f/60.0f;
     u_int32_t itt = 0;
     float totaltime = 0;
+
+    int WIDTH = 640;
+    int HEIGHT = 480;
+
+    SDL_Texture* texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,WIDTH,HEIGHT);
+
+
+    u_int32_t* frameBuffer = new u_int32_t[WIDTH * HEIGHT];
+    float* depthBuffer = new float[WIDTH * HEIGHT];
     
     while(!gQuit) {
 
@@ -112,10 +121,16 @@ void mainLoop(SDL_Renderer *renderer) {
         if(frameEnd - frameStart >= framerate) {
             SDL_RenderClear(renderer);
             SDL_SetRenderDrawColor(renderer, 255, 242, 242, 255);//white line
-            
-            Draw(renderer, plane, cam);
-            //Draw(renderer,testTriangle, cam);
-            Draw(renderer, ship, cam);
+
+            //presumably clean buffers each frame
+            for(int i = 0; i < WIDTH * HEIGHT; i++) {
+                frameBuffer[i] = 0u; // Black color
+                depthBuffer[i] = std::numeric_limits<float>::infinity();
+            }
+
+            //Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
+            //Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
+            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
@@ -137,15 +152,18 @@ void mainLoop(SDL_Renderer *renderer) {
 
     }
 
+    delete frameBuffer;
+    delete depthBuffer;
+
 
 
 }
 
 
-void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
+void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera cam, u_int32_t* frameBuffer, float* depthBuffer) {
     int WIDTH = 640;
     int HEIGHT = 480;
-    std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount());
+    std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount(),0);
 
     entity projection = entity(testTri);
 
@@ -155,29 +173,86 @@ void Draw(SDL_Renderer *renderer,entity testTri, camera cam) {
     //calculate normals/facing ratios for backface culling
     cam.faceCulling( facingRatios, testTri );
 
+    //frustum culling for each triangle
+    cam.frustumCulling(facingRatios, projection);
+
+    //should probably rewrite later so this ACTUALLY benefits from early culling
     cam.perspectiveProjectionR(projection);
 
+    
+/*
+    std::cout << "NDC: " << projection[0].getP1() << "\n";
+    std::cout << "NDC: " << projection[0].getP2() << "\n";
+    std::cout << "NDC: " << projection[0].getP3() << "\n";
+    std::cout << "NDC: " << projection[1].getP1() << "\n";
+    std::cout << "NDC: " << projection[1].getP2() << "\n";
+    std::cout << "NDC: " << projection[1].getP3() << "\n";
+
+*/
+
+    for(int i = 0; i < testTri.getTriCount(); i++) {
+        if(projection[i].getP1().x() > 10 || projection[i].getP1().y() > 10){
+                    //std::cout << i << " NDC: " << projection[i].getP1() << "\n";
+
+        }
+
+    }
+    
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
     projection.scaleEntity(vec4(1.0f,HEIGHT*0.5f,1.0f,1.0f));
+
+    //LATER
+
+    //paralellize getting bounding boxes (only for negative FR)
+
+    //for each tris bounding box then test its pixels if facing
     
-    
+    int count = 0;
     //cull triangles facing away
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
 
         if( facingRatios[i] < 0.0) {
+            ++count;
 
             //SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
             //flatShading(renderer, projection[i]);
 
+            //get bounding box for current triangle
+            float boxMinX = std::min(std::min(projection[i].getP1().x(),projection[i].getP2().x()),projection[i].getP3().x());
+            float boxMaxX = std::max(std::max(projection[i].getP1().x(),projection[i].getP2().x()),projection[i].getP3().x());
+
+            float boxMinY = std::min(std::min(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
+            float boxMaxY = std::max(std::max(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
+            
+            //std::cout << "Ratio:" << facingRatios[i] << "\n";
+            //test all the pixels in that bounding box for z values
+            projection[i].setColour(255u,150u,150u,150u);
+            //std::cout << "Colour:" << projection[i].getColour() << "\n";
+
+            projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer, -facingRatios[i]);
+            
+            //rendering bounding box
+            //SDL_RenderDrawLine(renderer,boxMinX,boxMinY,boxMaxX, boxMinY);
+            //SDL_RenderDrawLine(renderer,boxMaxX,boxMinY,boxMaxX, boxMaxY);
+
+
+            //wireframe
+            /*
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
             SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
-
+            */
         }
+
     }
-    
+    std::cout << "Tris Rendered: " << count << " / " << testTri.getTriCount() << "\n";
+
+
+    //texture stuff
+    SDL_UpdateTexture(texture,nullptr,frameBuffer, WIDTH* sizeof(u_int32_t));
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 }
 
 bool Input(entity &test, camera &cam) {
@@ -242,6 +317,7 @@ bool Input(entity &test, camera &cam) {
             else if(e.key.keysym.sym == SDLK_y) {
                 test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
+            /*
             
             std::cout << "Look Angle: " << cam.getLookAngle() << "\n";
             std::cout << "Look Vec: " << cam.getLookVec() << "\n";
@@ -250,7 +326,7 @@ bool Input(entity &test, camera &cam) {
             std::cout << "\n Camera Direction: " << cam.direction() << "\n";
             std::cout << "Camera Position: " << cam.getPosition() << "\n";
 
-            std::cout << "KeyDown\n";
+            std::cout << "KeyDown\n";*/
         }
     }
     return false;
