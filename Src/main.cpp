@@ -172,11 +172,14 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
     //calculate normals/facing ratios for backface culling
     cam.faceCulling( facingRatios, testTri );
 
-    cam.perspectiveProjectionR(projection);
-
     //frustum culling for each triangle
     cam.frustumCulling(facingRatios, projection);
 
+    //should probably rewrite later so this ACTUALLY benefits from early culling
+    cam.perspectiveProjectionR(projection);
+
+    
+/*
     std::cout << "NDC: " << projection[0].getP1() << "\n";
     std::cout << "NDC: " << projection[0].getP2() << "\n";
     std::cout << "NDC: " << projection[0].getP3() << "\n";
@@ -184,7 +187,16 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
     std::cout << "NDC: " << projection[1].getP2() << "\n";
     std::cout << "NDC: " << projection[1].getP3() << "\n";
 
+*/
 
+    for(int i = 0; i < testTri.getTriCount(); i++) {
+        if(projection[i].getP1().x() > 10 || projection[i].getP1().y() > 10){
+                    //std::cout << i << " NDC: " << projection[i].getP1() << "\n";
+
+        }
+
+    }
+    
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
@@ -196,11 +208,12 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
 
     //for each tris bounding box then test its pixels if facing
     
-    
+    int count = 0;
     //cull triangles facing away
     for(int i = 0; i < testTri.getTriCount(); i ++ ) {
 
         if( facingRatios[i] < 0.0) {
+            ++count;
 
             //SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
             //flatShading(renderer, projection[i]);
@@ -231,7 +244,10 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
             SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
             */
         }
+
     }
+    std::cout << "Tris Rendered: " << count << " / " << testTri.getTriCount() << "\n";
+
 
     //texture stuff
     SDL_UpdateTexture(texture,nullptr,frameBuffer, WIDTH* sizeof(u_int32_t));
@@ -300,6 +316,7 @@ bool Input(entity &test, camera &cam) {
             else if(e.key.keysym.sym == SDLK_y) {
                 test.translateEntity(vec4(0.0f,20.0f,0.0f,0.0f));
             }
+            /*
             
             std::cout << "Look Angle: " << cam.getLookAngle() << "\n";
             std::cout << "Look Vec: " << cam.getLookVec() << "\n";
@@ -308,7 +325,7 @@ bool Input(entity &test, camera &cam) {
             std::cout << "\n Camera Direction: " << cam.direction() << "\n";
             std::cout << "Camera Position: " << cam.getPosition() << "\n";
 
-            std::cout << "KeyDown\n";
+            std::cout << "KeyDown\n";*/
         }
     }
     return false;

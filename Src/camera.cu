@@ -18,7 +18,7 @@ __host__ __device__ camera::camera() {
         right = vec4(1,0,vertFOV/2,0);//just a direction
 
         top = vec4(0,1,vertFOV/2,0);
-        bottom = vec4(0,1,vertFOV/2,0);
+        bottom = vec4(0,-1,vertFOV/2,0);
 
          //topPlane = 200;
          bottomPlane = -topPlane;
@@ -427,22 +427,65 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 
 __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
     for(int i = 0; i < object.getTriCount(); i++) {
-        /*
-        if(std::min(object[i].getP1().y(),std::min(object[i].getP2().y(), object[i].getP3().y())) > 1.0 ) {
-            faceRatios[i] = 1.0;
-        } else if(std::min(object[i].getP1().x(),std::min(object[i].getP2().x(), object[i].getP3().x())) > 1.0 ) {
-            faceRatios[i] = 1.0;
-        } else if(std::max(object[i].getP1().z(),std::max(object[i].getP2().z(), object[i].getP3().z())) < 0.0 ) {
-            faceRatios[i] = 1.0;
-
-        } else if(std::min(object[i].getP1().z(),std::min(object[i].getP2().z(), object[i].getP3().z())) > 1.50) {
-            faceRatios[i] = 1.0;
-        }*/
-
-        if(!(triInFrustum(object[i]))) {
+ 
+        if( std::max( std::max((object[i].getP1().y()*vec4(this->top) - object[i].getP1()).y(),
+        (object[i].getP2().y()*vec4(this->top) - object[i].getP2()).y()),
+        (object[i].getP3().y()*vec4(this->top) - object[i].getP3() ).y() ) < 0.0) {//if above frustum cull
+            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
+        
             faceRatios[i] = 1.0;
 
         }
+       if( std::min( std::min((object[i].getP1().y()*vec4(this->bottom)- object[i].getP1()).y(),
+        (object[i].getP2().y()*vec4(this->bottom) - object[i].getP2()).y()),
+        (object[i].getP3().y()*vec4(this->bottom) - object[i].getP3() ).y() ) > 0.0) {//if below frustum cull
+            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        if( std::max( std::max((vec4(this->right) - object[i].getP1()).x(),
+        (vec4(this->right) - object[i].getP2()).x()),
+        (vec4(this->right) - object[i].getP3() ).x() ) < 0.0) {//if to the right of frustum
+            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        if( std::min( std::min((vec4(this->left) - object[i].getP1()).x(),
+        (vec4(this->left) - object[i].getP2()).x()),
+        (vec4(this->left) - object[i].getP3() ).x() ) > 0.0) {//if left of frustum cull
+            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        if( std::max( std::max(object[i].getP1().z(),
+        (object[i].getP2().z())),
+        (object[i].getP3().z() )) < this->start) {//if too close to frustum
+            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
+        
+            faceRatios[i] = 1.0;
+
+        }
+        if( std::min( std::min(object[i].getP1().z(),
+        (object[i].getP2().z())),
+        (object[i].getP3() ).z())  > 1.0) {//if too far from frustum
+            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
+            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
+        
+            //faceRatios[i] = 1.0;
+
+        }
+        
+        
+
+
     }
 }
 
