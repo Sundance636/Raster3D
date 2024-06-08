@@ -17,8 +17,8 @@ __host__ __device__ camera::camera() {
         left = vec4(-1,0,vertFOV/2,0);//just a direction
         right = vec4(1,0,vertFOV/2,0);//just a direction
 
-        top = vec4(0,1,vertFOV/2,0);
-        bottom = vec4(0,-1,vertFOV/2,0);
+        top = vec4(0,1,tan(vertFOV/2),0);
+        bottom = vec4(0,-1,tan(vertFOV/2),0);
 
          //topPlane = 200;
          bottomPlane = -topPlane;
@@ -427,23 +427,31 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 
 __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
     for(int i = 0; i < object.getTriCount(); i++) {
- 
-        if( std::max( std::max((object[i].getP1().y()*vec4(this->top) - object[i].getP1()).y(),
-        (object[i].getP2().y()*vec4(this->top) - object[i].getP2()).y()),
-        (object[i].getP3().y()*vec4(this->top) - object[i].getP3() ).y() ) < 0.0) {//if above frustum cull
+        //evaluate bound
+        
+        //for top
+        float topBound1 = tan(vertFOV/2) * object[i].getP1().z();// + object[i].getP1().z()/ 60.0);//margin of erro
+        float topBound2 = tan(vertFOV/2) * object[i].getP2().z();// + object[i].getP2().z()/ 60.0);//margin of erro
+        float topBound3 = tan(vertFOV/2) * object[i].getP3().z();// + object[i].getP3().z()/ 60.0);//margin of erro
+
+        float bottomBound1 = -tan(vertFOV/2) * object[i].getP1().z();
+        float bottomBound2 = -tan(vertFOV/2) * object[i].getP2().z();
+        float bottomBound3 = -tan(vertFOV/2) * object[i].getP3().z();
+
+
+        //change to cull only if all point are out of bounds
+        if((object[i].getP1().y() > topBound1) && (object[i].getP2().y() > topBound2) &&  object[i].getP3().y() > topBound3  ) {//if above frustum cull
             //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
             //std::cout << "Top Plane: " << vec4(this->top) << "\n";
         
             faceRatios[i] = 1.0;
 
         }
-       if( std::min( std::min((object[i].getP1().y()*vec4(this->bottom)- object[i].getP1()).y(),
-        (object[i].getP2().y()*vec4(this->bottom) - object[i].getP2()).y()),
-        (object[i].getP3().y()*vec4(this->bottom) - object[i].getP3() ).y() ) > 0.0) {//if below frustum cull
+       if( (object[i].getP1().y() < bottomBound1) && (object[i].getP2().y() < bottomBound2) &&  object[i].getP3().y() < bottomBound3  ) {//if below frustum cull
             //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
             //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
         
-            //faceRatios[i] = 1.0;
+            faceRatios[i] = 1.0;
 
         }
         if( std::max( std::max((vec4(this->right) - object[i].getP1()).x(),
