@@ -3,7 +3,7 @@
 __host__ __device__ camera::camera() {
     //initialize default camera parameters
          start = 100;//the near plane of the frustum
-         end = 600;//far plane
+         end = 6000;//far plane
 
          topPlane = tan(M_PI_4/2.0f) * start;
 
@@ -72,10 +72,11 @@ __host__ __device__ vec4 camera::perspectiveProjection(vec4 point) {
     return newVec;
 }
 
-__host__ entity camera::perspectiveProjectionR(entity &object) {
+__host__ entity camera::perspectiveProjectionR(std::vector<float> facingRatios, entity &object) {
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
     triangle* d_tris;
+    float* d_facingRatios;
 
     checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
     checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
@@ -416,8 +417,12 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 
     cullingK<<<numBlocks, blockSize>>>(this->getPosition(),d_tris,d_facenorm,object.getTriCount()); 
     checkCudaErrors (cudaDeviceSynchronize());
-    checkCudaErrors(cudaGetLastError());    
+    checkCudaErrors(cudaGetLastError());
 
+    //frustumCullingK<<<numBlocks, blockSize>>>(vertFOV,horiFOV,this->start,this->end,d_tris,d_facenorm,object.getTriCount());
+    //checkCudaErrors (cudaDeviceSynchronize());
+    //checkCudaErrors(cudaGetLastError());
+    
     checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, object.getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(d_facenorm));
     checkCudaErrors(cudaFree(d_tris));
@@ -427,6 +432,37 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 }
 
 __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
+
+    triangle* trisArray = object.getTriangles();//pass vec as an array
+    float* faceArray = faceRatios.data();
+
+    triangle* d_tris = nullptr;
+    float* d_facenorm = nullptr;
+
+    checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_facenorm, object.getTriCount() * sizeof(float)));
+    checkCudaErrors(cudaMemcpy(d_facenorm,faceArray, object.getTriCount() * sizeof(float), cudaMemcpyHostToDevice));
+
+
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
+    
+
+    frustumCullingK<<<numBlocks, blockSize>>>(vertFOV,horiFOV,this->start,this->end,d_tris,d_facenorm,object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+    
+    checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, object.getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_facenorm));
+    checkCudaErrors(cudaFree(d_tris));
+
+    d_tris = nullptr;
+    d_facenorm = nullptr;
+
+    /*
     for(int i = 0; i < object.getTriCount(); i++) {
         //evaluate bound
         
@@ -436,7 +472,7 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
         float topBound3 = tan(vertFOV/2) * object[i].getP3().z();// + object[i].getP3().z()/ 60.0);//margin of erro
 
         float bottomBound1 = -tan(vertFOV/2) * object[i].getP1().z();
-        float bottomBound2 = -tan(vertFOV/2) * object[i].getP2().z();
+        float bottomBound2 = -tan(vertFOV/2) * obt[ijec].getP2().z();
         float bottomBound3 = -tan(vertFOV/2) * object[i].getP3().z();
 
         float rightBound1 = tan(horiFOV/2) * object[i].getP1().z();
@@ -499,5 +535,5 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
         
 
 
-    }
+    }*/
 }

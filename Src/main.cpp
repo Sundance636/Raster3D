@@ -90,7 +90,7 @@ void mainLoop(SDL_Renderer *renderer) {
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
-    ship.loadObj("Models/cat.obj");
+    ship.loadObj("Models/Sora2.obj");
     
     ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
@@ -177,27 +177,9 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
     cam.frustumCulling(facingRatios, projection);
 
     //should probably rewrite later so this ACTUALLY benefits from early culling
-    cam.perspectiveProjectionR(projection);
+    cam.perspectiveProjectionR(facingRatios, projection);
 
-    
-/*
-    std::cout << "NDC: " << projection[0].getP1() << "\n";
-    std::cout << "NDC: " << projection[0].getP2() << "\n";
-    std::cout << "NDC: " << projection[0].getP3() << "\n";
-    std::cout << "NDC: " << projection[1].getP1() << "\n";
-    std::cout << "NDC: " << projection[1].getP2() << "\n";
-    std::cout << "NDC: " << projection[1].getP3() << "\n";
 
-*/
-
-    for(int i = 0; i < testTri.getTriCount(); i++) {
-        if(projection[i].getP1().x() > 10 || projection[i].getP1().y() > 10){
-                    //std::cout << i << " NDC: " << projection[i].getP1() << "\n";
-
-        }
-
-    }
-    
     //part of coordinate conversion (screen space)
     projection.translateEntity(vec4(1.0f,1.0f,0.0f,0.0f));
     projection.scaleEntity(vec4(WIDTH* 0.5f,1.0f,1.0f,1.0f));
@@ -210,8 +192,11 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
     //for each tris bounding box then test its pixels if facing
     
     int count = 0;
-    //cull triangles facing away
-    for(int i = 0; i < testTri.getTriCount(); i ++ ) {
+
+    //perform depth testing and pixel coloring
+    projection.depthTest(WIDTH, HEIGHT, count, frameBuffer, depthBuffer, facingRatios);
+
+    /* for(int i = 0; i < testTri.getTriCount(); i ++ ) {
 
         if( facingRatios[i] < 0.0) {
             ++count;
@@ -227,8 +212,10 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
             float boxMaxY = std::max(std::max(projection[i].getP1().y(),projection[i].getP2().y()),projection[i].getP3().y());
             
             //std::cout << "Ratio:" << facingRatios[i] << "\n";
+            
             //test all the pixels in that bounding box for z values
-            projection[i].setColour(255u,150u,150u,150u);
+            //projection[i].setColour(255u,150u,150u,150u);
+            
             //std::cout << "Colour:" << projection[i].getColour() << "\n";
 
             projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer, -facingRatios[i]);
@@ -239,20 +226,23 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
 
 
             //wireframe
-            /*
-            SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
-            SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
-            SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
-            */
+            
+            //SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP2().x(), projection[i].getP2().y());
+            //SDL_RenderDrawLine(renderer,projection[i].getP1().x(),projection[i].getP1().y(),projection[i].getP3().x(), projection[i].getP3().y());
+            //SDL_RenderDrawLine(renderer,projection[i].getP3().x(),projection[i].getP3().y(),projection[i].getP2().x(), projection[i].getP2().y());
+            
         }
 
-    }
+    }*/
+    
+    
     std::cout << "Tris Rendered: " << count << " / " << testTri.getTriCount() << "\n";
 
 
     //texture stuff
     SDL_UpdateTexture(texture,nullptr,frameBuffer, WIDTH* sizeof(u_int32_t));
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    
 }
 
 bool Input(entity &test, camera &cam) {

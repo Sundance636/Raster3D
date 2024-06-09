@@ -52,7 +52,7 @@ class camera {
     public:
         __host__ __device__ camera();
         __host__ __device__ vec4 perspectiveProjection(vec4);
-        __host__ entity perspectiveProjectionR(entity&);
+        __host__ entity perspectiveProjectionR(std::vector<float>,entity&);
 
         __host__ __device__ vec4 viewTransform(vec4);
         __host__ entity viewTransformR(entity&);

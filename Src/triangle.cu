@@ -8,6 +8,8 @@ __host__ __device__ triangle::triangle(vec4 p1, vec4 p2, vec4 p3) {
     this->point2 = p2;
     this->point3 = p3;
 
+    this->setColour(255u,150u,150u,150u);
+
     calculateSurfaceNormal();
 }
 
@@ -92,18 +94,18 @@ __host__ __device__ void triangle::calculateSurfaceNormal() {
 }
 
 __host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float boxMinY, float boxMaxY, int WIDTH, int HEIGHT,u_int32_t* frameBuffer, float* depthBuffer, float facingRatio) {
-    int xMin = std::max(0, std::min(WIDTH - 1, (int)std::floor(boxMinX)));
-    int yMin = std::max(0, std::min(HEIGHT - 1, (int)std::floor(boxMinY)));
-    int xMax = std::max(0, std::min(WIDTH - 1, (int)std::floor(boxMaxX)));
-    int yMax = std::max(0, std::min(HEIGHT - 1, (int)std::floor(boxMaxY)));
+    int xMin = max(0, min(WIDTH - 1, (int)floor(boxMinX)));
+    int yMin = max(0, min(HEIGHT - 1, (int)floor(boxMinY)));
+    int xMax = max(0, min(WIDTH - 1, (int)floor(boxMaxX)));
+    int yMax = max(0, min(HEIGHT - 1, (int)floor(boxMaxY)));
 
 
     //looping through the bounding box for given triangle
     for (int y = yMin; y <= yMax; ++y) {
         for (int x = xMin; x <= xMax; ++x) {
-            float w0 = edgeFunction(this->point2, this->point3, vec4(x, y,0, 0));
-            float w1 = edgeFunction(this->point3, this->point1, vec4(x, y,0, 0));
-            float w2 = edgeFunction(this->point1, this->point2, vec4(x, y,0, 0));
+            float w0 = edgeFunction(this->point2, this->point3, vec4(x, y,0.0f, 0.0f));
+            float w1 = edgeFunction(this->point3, this->point1, vec4(x, y,0.0f, 0.0f));
+            float w2 = edgeFunction(this->point1, this->point2, vec4(x, y,0.0f, 0.0f));
 
 
             if (pixelInTri(x, y)) {
@@ -120,9 +122,9 @@ __host__ __device__ bool triangle::hitTest(float boxMinX, float boxMaxX, float b
 }
 
 __host__ __device__ bool triangle::pixelInTri(int screenX, int screenY) {
-    float w0 = edgeFunction(this->point2, this->point3, vec4(screenX, screenY,0, 0));
-    float w1 = edgeFunction(this->point3, this->point1, vec4(screenX, screenY,0, 0));
-    float w2 = edgeFunction(this->point1, this->point2, vec4(screenX, screenY,0, 0));
+    float w0 = edgeFunction(this->point2, this->point3, vec4(screenX, screenY,0.0f, 0.0f));
+    float w1 = edgeFunction(this->point3, this->point1, vec4(screenX, screenY,0.0f, 0.0f));
+    float w2 = edgeFunction(this->point1, this->point2, vec4(screenX, screenY,0.0f, 0.0f));
 
 
     return w0 >= 0 && w1 >= 0 && w2 >= 0; 

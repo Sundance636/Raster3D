@@ -284,8 +284,216 @@ __global__ void cullingK( vec4 camPosition, triangle* tris, float* facingRatios,
 
         facingRatios[idx] = dot_product4(tris[idx].getSurfaceNormal(), eyeLine);
 
+        
+
     } 
 }
+
+__global__ void frustumCullingK(float vertFOV, float horiFOV, float nearPlane,float farPlane, triangle* object, float* faceRatios, int numOfTris) {
+    
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(idx < numOfTris) {
+            //evaluate bound
+            
+            //for top
+            float topBound1 = tan(vertFOV/2) * object[idx].getP1().z();// + object[i].getP1().z()/ 60.0);//margin of erro
+            float topBound2 = tan(vertFOV/2) * object[idx].getP2().z();// + object[i].getP2().z()/ 60.0);//margin of erro
+            float topBound3 = tan(vertFOV/2) * object[idx].getP3().z();// + object[i].getP3().z()/ 60.0);//margin of erro
+
+            float bottomBound1 = -tan(vertFOV/2) * object[idx].getP1().z();
+            float bottomBound2 = -tan(vertFOV/2) * object[idx].getP2().z();
+            float bottomBound3 = -tan(vertFOV/2) * object[idx].getP3().z();
+
+            float rightBound1 = tan(horiFOV/2) * object[idx].getP1().z();
+            float rightBound2 = tan(horiFOV/2) * object[idx].getP2().z();
+            float rightBound3 = tan(horiFOV/2) * object[idx].getP3().z();
+
+            float leftBound1 = -tan(horiFOV/2) * object[idx].getP1().z();
+            float leftBound2 = -tan(horiFOV/2) * object[idx].getP2().z();
+            float leftBound3 = -tan(horiFOV/2) * object[idx].getP3().z();
+
+
+            //change to cull only if all point are out of bounds
+            if((object[idx].getP1().y() > topBound1) && (object[idx].getP2().y() > topBound2) &&  object[idx].getP3().y() > topBound3  ) {//if above frustum cull
+                //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
+                //std::cout << "Top Plane: " << vec4(this->top) << "\n";
+            
+                faceRatios[idx] = 1.0f;
+
+            }
+        else if( (object[idx].getP1().y() < bottomBound1) && (object[idx].getP2().y() < bottomBound2) &&  object[idx].getP3().y() < bottomBound3  ) {//if below frustum cull
+                //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
+                //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
+            
+                faceRatios[idx] = 1.0f;
+
+            }
+            else if((object[idx].getP1().x() > rightBound1) && (object[idx].getP2().x() > rightBound2) &&  (object[idx].getP3().x() > rightBound3) ) {//if to the right of frustum
+                //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
+                //std::cout << "Top Plane: " << vec4(this->top) << "\n";
+            
+                faceRatios[idx] = 1.0f;
+
+            }
+            else if((object[idx].getP1().x() < leftBound1) && (object[idx].getP2().x() < leftBound2) &&  (object[idx].getP3().x() < leftBound3)) {//if left of frustum cull
+                //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
+                //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
+            
+                faceRatios[idx] = 1.0f;
+
+            }
+            else if(max( max(object[idx].getP1().z(),
+        (object[idx].getP2().z())),
+        (object[idx].getP3().z() )) < nearPlane) {//if too close to frustum
+                //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
+                //std::cout << "Near Plane: " << vec4(this->near) << "\n";
+            
+                faceRatios[idx] = 1.0f;
+
+            }
+
+            
+            if( min(min(object[idx].getP1().z(),
+            (object[idx].getP2().z())),
+            (object[idx].getP3() ).z())  > farPlane) {//if too far from frustum
+                //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
+                //std::cout << "Near Plane: " << vec4(this->near) << "\n";
+            
+                //faceRatios[idx] = 1.0f;
+
+            }
+            
+            
+
+
+        }
+
+}
+
+__host__ void entity::depthTest(int WIDTH,int HEIGHT,int &count ,u_int32_t* frameBuffer, float* depthBuffer,std::vector<float> faceRatios) {
+
+    triangle* trisArray = this->getTriangles();//pass vec as an array
+    float* faceArray = faceRatios.data();
+
+    triangle* d_tris = nullptr;
+    float* d_facenorm = nullptr;
+    u_int32_t* d_frameBuffer = nullptr;
+    float* d_depthBuffer = nullptr;
+    u_int32_t* d_count = 0;
+
+    checkCudaErrors(cudaMalloc((void**)&d_tris, this->getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, this->getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_facenorm, this->getTriCount() * sizeof(float)));
+    checkCudaErrors(cudaMemcpy(d_facenorm,faceArray, this->getTriCount() * sizeof(float), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t)));
+    checkCudaErrors(cudaMemcpy(d_frameBuffer,frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_depthBuffer, WIDTH * HEIGHT * sizeof(float)));
+    checkCudaErrors(cudaMemcpy(d_depthBuffer,depthBuffer, WIDTH * HEIGHT * sizeof(float), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_count, sizeof(u_int32_t)));
+
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (this->getTriCount() + blockSize - 1) / blockSize;
+    
+
+    hitTestK<<<numBlocks, blockSize>>>(WIDTH,HEIGHT,d_tris,d_facenorm,d_frameBuffer, d_depthBuffer,d_count,this->getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+
+    
+    checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, this->getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(frameBuffer,d_frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(depthBuffer,d_depthBuffer, WIDTH * HEIGHT * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(&count,d_count, sizeof(u_int32_t), cudaMemcpyDeviceToHost));
+
+
+    checkCudaErrors(cudaFree(d_facenorm));
+    checkCudaErrors(cudaFree(d_tris));
+    checkCudaErrors(cudaFree(d_frameBuffer));
+    checkCudaErrors(cudaFree(d_depthBuffer));
+    checkCudaErrors(cudaFree(d_count));
+
+
+    d_tris = nullptr;
+    d_facenorm = nullptr;
+    d_depthBuffer = nullptr;
+    d_frameBuffer = nullptr;
+    d_count = nullptr;
+}
+__device__ __forceinline__ float atomicMinFloat (float * addr, float value) {
+        float old;
+        old = (value >= 0) ? __int_as_float(atomicMin((int *)addr, __float_as_int(value))) :
+             __uint_as_float(atomicMax((unsigned int *)addr, __float_as_uint(value)));
+
+        return old;
+}
+
+__global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer,float*  d_depthBuffer,u_int32_t* d_count, int numOfTris) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(idx < numOfTris && d_facenorm[idx] < 0.0f) {
+        //(*d_count)++;
+
+        //atomicInc(d_count,*d_count);
+
+            //get bounding box for current triangle
+            float boxMinX = min(min(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
+            float boxMaxX = max(max(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
+
+            float boxMinY = min(min(d_tris[idx].getP1().y(),d_tris[idx].getP2().y()),d_tris[idx].getP3().y());
+            float boxMaxY = max(max(d_tris[idx].getP1().y(),d_tris[idx].getP2().y()),d_tris[idx].getP3().y());
+    
+        // Clamp bounding box to screen dimensions if too big
+        int xMin = max(0, min(WIDTH - 1, (int)floor(boxMinX)));
+        int yMin = max(0, min(HEIGHT - 1, (int)floor(boxMinY)));
+        int xMax = max(0, min(WIDTH - 1, (int)floor(boxMaxX)));
+        int yMax = max(0, min(HEIGHT - 1, (int)floor(boxMaxY)));
+        
+
+        // Parallelize pixel processing within bounding box
+        for (int y = yMin; y <= yMax; y ++) {
+            for (int x = xMin; x <= xMax; x ++) {
+                float w0 = edgeFunction(d_tris[idx].getP2(), d_tris[idx].getP3(), vec4(x, y, 0.0f, 0.0f));
+                float w1 = edgeFunction(d_tris[idx].getP3(), d_tris[idx].getP1(), vec4(x, y, 0.0f, 0.0f));
+                float w2 = edgeFunction(d_tris[idx].getP1(), d_tris[idx].getP2(), vec4(x, y, 0.0f, 0.0f));
+
+                if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+                    // Normalize depth buffer values
+                    float depth = (w0 * d_tris[idx].getP1().z() + w1 * d_tris[idx].getP2().z() + w2 * d_tris[idx].getP3().z()) / (w0 + w1 + w2);
+                    int index = y * WIDTH + x;
+
+                    // Atomic operation to ensure correct depth buffering
+                    //fatomicMin(&d_depthBuffer[index], (int)depth);
+                    
+                    // If the depth buffer was updated, set the pixel color
+                    if (d_depthBuffer[index] > depth) {
+                        d_depthBuffer[index] = depth;
+
+                        uint32_t col = d_tris[idx].getColour();
+                        uint8_t A = (col >> 24) & 0xFF;
+                        uint8_t R = (col >> 16) & 0xFF;
+                        uint8_t G = (col >> 8) & 0xFF;
+                        uint8_t B = col & 0xFF;
+
+                        R = (uint8_t)(R * -d_facenorm[idx]);
+                        G = (uint8_t)(G * -d_facenorm[idx]);
+                        B = (uint8_t)(B * -d_facenorm[idx]);
+                        A = (uint8_t)(255 * -d_facenorm[idx]);
+
+                        uint32_t color = (A << 24) | (R << 16) | (G << 8) | B;
+                        d_frameBuffer[index] = color;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 
 __host__ __device__ void entity::rotateEntityZ(float angle) {
