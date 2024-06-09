@@ -9,13 +9,14 @@ __host__ __device__ camera::camera() {
 
         //vertical FOV (cross of top bottom)
          vertFOV = M_PI_4; // 90 degrees
+         horiFOV = M_PI_4 * (4.0f/3.0f);//magic numbers :(
 
         //frustrum dimensions
          
         rightPlane = topPlane * (4.0f/3.0f);//4 by 3 aspect ratio
         leftPlane = -rightPlane;
-        left = vec4(-1,0,vertFOV/2,0);//just a direction
-        right = vec4(1,0,vertFOV/2,0);//just a direction
+        left = vec4(-1,0,horiFOV/2,0);//just a direction
+        right = vec4(1,0,horiFOV/2,0);//just a direction
 
         top = vec4(0,1,tan(vertFOV/2),0);
         bottom = vec4(0,-1,tan(vertFOV/2),0);
@@ -438,6 +439,14 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
         float bottomBound2 = -tan(vertFOV/2) * object[i].getP2().z();
         float bottomBound3 = -tan(vertFOV/2) * object[i].getP3().z();
 
+        float rightBound1 = tan(horiFOV/2) * object[i].getP1().z();
+        float rightBound2 = tan(horiFOV/2) * object[i].getP2().z();
+        float rightBound3 = tan(horiFOV/2) * object[i].getP3().z();
+
+        float leftBound1 = -tan(horiFOV/2) * object[i].getP1().z();
+        float leftBound2 = -tan(horiFOV/2) * object[i].getP2().z();
+        float leftBound3 = -tan(horiFOV/2) * object[i].getP3().z();
+
 
         //change to cull only if all point are out of bounds
         if((object[i].getP1().y() > topBound1) && (object[i].getP2().y() > topBound2) &&  object[i].getP3().y() > topBound3  ) {//if above frustum cull
@@ -454,22 +463,18 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
             faceRatios[i] = 1.0;
 
         }
-        if( std::max( std::max((vec4(this->right) - object[i].getP1()).x(),
-        (vec4(this->right) - object[i].getP2()).x()),
-        (vec4(this->right) - object[i].getP3() ).x() ) < 0.0) {//if to the right of frustum
+        if((object[i].getP1().x() > rightBound1) && (object[i].getP2().x() > rightBound2) &&  (object[i].getP3().x() > rightBound3) ) {//if to the right of frustum
             //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
             //std::cout << "Top Plane: " << vec4(this->top) << "\n";
         
-            //faceRatios[i] = 1.0;
+            faceRatios[i] = 1.0;
 
         }
-        if( std::min( std::min((vec4(this->left) - object[i].getP1()).x(),
-        (vec4(this->left) - object[i].getP2()).x()),
-        (vec4(this->left) - object[i].getP3() ).x() ) > 0.0) {//if left of frustum cull
+        if((object[i].getP1().x() < leftBound1) && (object[i].getP2().x() < leftBound2) &&  (object[i].getP3().x() < leftBound3)) {//if left of frustum cull
             //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
             //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
         
-            //faceRatios[i] = 1.0;
+            faceRatios[i] = 1.0;
 
         }
         if( std::max( std::max(object[i].getP1().z(),
@@ -495,13 +500,4 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
 
 
     }
-}
-
-//camera function for checking if all the triangles of a given entity are even in the frustum
-//in  this case for clipping the entire tri
-
-__host__ bool camera::triInFrustum(triangle tri) {
-   
-   //if(tri.getP1() - ) 
-
 }

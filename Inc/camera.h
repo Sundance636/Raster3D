@@ -58,7 +58,6 @@ class camera {
         __host__ entity viewTransformR(entity&);
         __host__ void faceCulling(std::vector<float>&faceRatios, entity&);
         __host__ void frustumCulling(std::vector<float>&faceRatios, entity&);
-        __host__ bool triInFrustum(triangle tri);
 
 
 

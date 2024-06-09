@@ -3,6 +3,8 @@ Models/Sora.obj
 Models/JackFrost.obj
 Models/Jotaro.obj
 Models/Sora2.obj
+Models/bugatti.obj
+Models/cat.obj
 Engine
 *.o
 debug.txt
