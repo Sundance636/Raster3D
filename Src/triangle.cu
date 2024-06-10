@@ -130,8 +130,8 @@ __host__ __device__ bool triangle::pixelInTri(int screenX, int screenY) {
     return w0 >= 0 && w1 >= 0 && w2 >= 0; 
 }
 
-__host__ __device__ float edgeFunction( const vec4 a, const vec4 b, const vec4 c) {
-    return (vec4(c).x() - a.x()) * (vec4(b).y() - a.y()) - (vec4(c).y() - a.y()) * (vec4(b).x() - a.x());
+__host__ __device__ float edgeFunction( const vec4& a, const vec4& b, const vec4& c) {
+    return (c.x() - a.x()) * (b.y() - a.y()) - (c.y() - a.y()) * (b.x() - a.x());
 }
 
 __host__ __device__ void triangle::setPixel(int screenX, int screenY, float depth, int WIDTH,int HEIGHT, u_int32_t* frameBuffer, float* depthBuffer, float facingRatio ) {

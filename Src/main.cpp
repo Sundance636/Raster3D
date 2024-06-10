@@ -128,9 +128,9 @@ void mainLoop(SDL_Renderer *renderer) {
                 depthBuffer[i] = std::numeric_limits<float>::infinity();
             }
 
-            //Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
+            Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
             //Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
-            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
+            //Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
@@ -196,10 +196,14 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
     //perform depth testing and pixel coloring
     projection.depthTest(WIDTH, HEIGHT, count, frameBuffer, depthBuffer, facingRatios);
 
-    /* for(int i = 0; i < testTri.getTriCount(); i ++ ) {
+     /*for(int i = 0; i < testTri.getTriCount(); i ++ ) {
 
         if( facingRatios[i] < 0.0) {
             ++count;
+            std::cout << "Screen Point: " << projection[i].getP1() << "\n";
+            std::cout << "Screen Point: " << projection[i].getP2() << "\n";
+            std::cout << "Screen Point: " << projection[i].getP3() << "\n";
+
 
             //SDL_SetRenderDrawColor(renderer, 150 * -facingRatios[i], 150*-facingRatios[i], 150*-facingRatios[i],  150*-facingRatios[i]);//white line
             //flatShading(renderer, projection[i]);
@@ -218,7 +222,7 @@ void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera c
             
             //std::cout << "Colour:" << projection[i].getColour() << "\n";
 
-            projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer, -facingRatios[i]);
+           // projection[i].hitTest(boxMinX, boxMaxX, boxMinY, boxMaxY, WIDTH, HEIGHT,frameBuffer, depthBuffer, -facingRatios[i]);
             
             //rendering bounding box
             //SDL_RenderDrawLine(renderer,boxMinX,boxMinY,boxMaxX, boxMinY);

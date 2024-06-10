@@ -371,67 +371,175 @@ __global__ void frustumCullingK(float vertFOV, float horiFOV, float nearPlane,fl
 
 }
 
-__host__ void entity::depthTest(int WIDTH,int HEIGHT,int &count ,u_int32_t* frameBuffer, float* depthBuffer,std::vector<float> faceRatios) {
+struct Tile {
+    std::vector<int> triangleIndices;
+};
 
-    triangle* trisArray = this->getTriangles();//pass vec as an array
+__host__ void binTriangles( triangle* trisArray, int numTris, int WIDTH, int HEIGHT, int TILE_WIDTH, int TILE_HEIGHT, std::vector<Tile>& tiles) {
+    int numTilesX = (WIDTH + TILE_WIDTH - 1) / TILE_WIDTH;
+    int numTilesY = (HEIGHT + TILE_HEIGHT - 1) / TILE_HEIGHT;
+
+    for (int i = 0; i < numTris; i++) {
+            float minX = std::min(std::min(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
+            float maxX = std::max(std::max(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
+            float minY = std::min(std::min(trisArray[i].getP1().y(),trisArray[i].getP2().y()),trisArray[i].getP3().y());
+            float maxY = std::max(std::max(trisArray[i].getP1().y(),trisArray[i].getP2().y()),trisArray[i].getP3().y());
+            
+        int startTileX = std::max(0, static_cast<int>(minX / TILE_WIDTH));
+        int endTileX = std::min(numTilesX - 1, static_cast<int>(maxX / TILE_WIDTH));
+        int startTileY = std::max(0, static_cast<int>(minY / TILE_HEIGHT));
+        int endTileY = std::min(numTilesX - 1, static_cast<int>(maxY / TILE_HEIGHT));
+
+        for (int y = startTileY; y <= endTileY; ++y) {
+            for (int x = startTileX; x <= endTileX; ++x) {
+                int tileIndex = y * numTilesX + x;
+
+                
+                tiles[tileIndex].triangleIndices.push_back(i);
+            }
+        }
+    }
+}
+
+
+__global__ void rasterizeTile(int WIDTH, int HEIGHT, triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer, float* d_depthBuffer, int* d_tileTriIndices, int* d_tileTriCounts, int TILE_WIDTH, int TILE_HEIGHT) {
+    int tileIdx = blockIdx.x * blockDim.x + threadIdx.x;
+
+
+
+    int tileX = tileIdx % (WIDTH / TILE_WIDTH);
+    int tileY = tileIdx / (WIDTH / TILE_WIDTH);
+
+    int xMin = tileX * TILE_WIDTH;
+    int yMin = tileY * TILE_HEIGHT;
+    int xMax = min(WIDTH, (tileX + 1) * TILE_WIDTH);
+    int yMax = min(HEIGHT, (tileY + 1) * TILE_HEIGHT);
+
+    int startTriIdx = d_tileTriCounts[tileIdx * 2];
+    int endTriIdx = d_tileTriCounts[tileIdx * 2 + 1];
+
+    for (int y = yMin; y < yMax; ++y) {
+        for (int x = xMin; x < xMax; ++x) {
+            vec4 third(static_cast<float>(x), static_cast<float>(y), 0.0f, 0.0f);
+
+            for (int i = startTriIdx; i <= endTriIdx; ++i) {
+                int idx = d_tileTriIndices[i];
+                if (d_facenorm[idx] < 0.0f) {
+                    float w0 = edgeFunction(d_tris[idx].getP2(), d_tris[idx].getP3(), third);
+                    float w1 = edgeFunction(d_tris[idx].getP3(), d_tris[idx].getP1(), third);
+                    float w2 = edgeFunction(d_tris[idx].getP1(), d_tris[idx].getP2(), third);
+
+                    if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f) {
+                        float depth = (w0 * d_tris[idx].getP1().z() + w1 * d_tris[idx].getP2().z() + w2 * d_tris[idx].getP3().z()) / (w0 + w1 + w2);
+                        int index = y * WIDTH + x;
+
+                        if (d_depthBuffer[index] > depth) {
+                            d_depthBuffer[index] = depth;
+
+                            uint32_t col = d_tris[idx].getColour();
+                            uint8_t A = (col >> 24) & 0xFF;
+                            uint8_t R = (col >> 16) & 0xFF;
+                            uint8_t G = (col >> 8) & 0xFF;
+                            uint8_t B = col & 0xFF;
+
+                            R = static_cast<uint8_t>(R * -d_facenorm[idx]);
+                            G = static_cast<uint8_t>(G * -d_facenorm[idx]);
+                            B = static_cast<uint8_t>(B * -d_facenorm[idx]);
+                            A = static_cast<uint8_t>(255 * -d_facenorm[idx]);
+
+                            uint32_t color = (A << 24) | (R << 16) | (G << 8) | B;
+                            d_frameBuffer[index] = color;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+__host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* frameBuffer, float* depthBuffer, std::vector<float> faceRatios) {
+    triangle* trisArray = this->getTriangles();
     float* faceArray = faceRatios.data();
 
     triangle* d_tris = nullptr;
     float* d_facenorm = nullptr;
     u_int32_t* d_frameBuffer = nullptr;
     float* d_depthBuffer = nullptr;
-    u_int32_t* d_count = 0;
+    u_int32_t* d_count = nullptr;
+    int* d_tileTriIndices = nullptr;
+    int* d_tileTriCounts = nullptr;
+
+    const int TILE_WIDTH = 16;
+    const int TILE_HEIGHT = 16;
+
+    int numTilesX = (WIDTH + TILE_WIDTH - 1) / TILE_WIDTH;
+    int numTilesY = (HEIGHT + TILE_HEIGHT - 1) / TILE_HEIGHT;
+
+    std::vector<Tile> tiles(numTilesX * numTilesY);
+
+    binTriangles(trisArray, this->getTriCount(), WIDTH, HEIGHT, TILE_WIDTH, TILE_HEIGHT, tiles);
+
+    std::vector<int> tileTriIndices;
+    std::vector<int> tileTriCounts(numTilesX * numTilesY * 2);
+    int currentIndex = 0;
+    for (int i = 0; i < tiles.size(); ++i) {
+        tileTriCounts[i * 2] = currentIndex;
+        tileTriIndices.insert(tileTriIndices.end(), tiles[i].triangleIndices.begin(), tiles[i].triangleIndices.end());
+        currentIndex += tiles[i].triangleIndices.size();
+        tileTriCounts[i * 2 + 1] = currentIndex - 1;
+    }
 
     checkCudaErrors(cudaMalloc((void**)&d_tris, this->getTriCount() * sizeof(triangle)));
-    checkCudaErrors(cudaMemcpy(d_tris,trisArray, this->getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_tris, trisArray, this->getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMalloc((void**)&d_facenorm, this->getTriCount() * sizeof(float)));
-    checkCudaErrors(cudaMemcpy(d_facenorm,faceArray, this->getTriCount() * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_facenorm, faceArray, this->getTriCount() * sizeof(float), cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMalloc((void**)&d_frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t)));
-    checkCudaErrors(cudaMemcpy(d_frameBuffer,frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_frameBuffer, frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t), cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMalloc((void**)&d_depthBuffer, WIDTH * HEIGHT * sizeof(float)));
-    checkCudaErrors(cudaMemcpy(d_depthBuffer,depthBuffer, WIDTH * HEIGHT * sizeof(float), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_depthBuffer, depthBuffer, WIDTH * HEIGHT * sizeof(float), cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMalloc((void**)&d_count, sizeof(u_int32_t)));
 
-    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
-    int blockSize = 256;
-    int numBlocks = (this->getTriCount() + blockSize - 1) / blockSize;
-    
+    checkCudaErrors(cudaMalloc((void**)&d_tileTriIndices, tileTriIndices.size() * sizeof(int)));
+    checkCudaErrors(cudaMemcpy(d_tileTriIndices, tileTriIndices.data(), tileTriIndices.size() * sizeof(int), cudaMemcpyHostToDevice));
 
-    hitTestK<<<numBlocks, blockSize>>>(WIDTH,HEIGHT,d_tris,d_facenorm,d_frameBuffer, d_depthBuffer,d_count,this->getTriCount());
-    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaMalloc((void**)&d_tileTriCounts, tileTriCounts.size() * sizeof(int)));
+    checkCudaErrors(cudaMemcpy(d_tileTriCounts, tileTriCounts.data(), tileTriCounts.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+    int blockSize = 256;
+    int numBlocks = (numTilesX * numTilesY + blockSize - 1) / blockSize;
+
+    rasterizeTile<<<numBlocks, blockSize>>>(WIDTH, HEIGHT, d_tris, d_facenorm, d_frameBuffer, d_depthBuffer, d_tileTriIndices, d_tileTriCounts, TILE_WIDTH, TILE_HEIGHT);
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
 
-    
     checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, this->getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(frameBuffer,d_frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(depthBuffer,d_depthBuffer, WIDTH * HEIGHT * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(&count,d_count, sizeof(u_int32_t), cudaMemcpyDeviceToHost));
-
+    checkCudaErrors(cudaMemcpy(frameBuffer, d_frameBuffer, (WIDTH * HEIGHT) * sizeof(u_int32_t), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(depthBuffer, d_depthBuffer, WIDTH * HEIGHT * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(&count, d_count, sizeof(u_int32_t), cudaMemcpyDeviceToHost));
 
     checkCudaErrors(cudaFree(d_facenorm));
     checkCudaErrors(cudaFree(d_tris));
     checkCudaErrors(cudaFree(d_frameBuffer));
     checkCudaErrors(cudaFree(d_depthBuffer));
     checkCudaErrors(cudaFree(d_count));
-
+    checkCudaErrors(cudaFree(d_tileTriIndices));
+    checkCudaErrors(cudaFree(d_tileTriCounts));
 
     d_tris = nullptr;
     d_facenorm = nullptr;
     d_depthBuffer = nullptr;
     d_frameBuffer = nullptr;
     d_count = nullptr;
+    d_tileTriIndices = nullptr;
+    d_tileTriCounts = nullptr;
 }
-__device__ __forceinline__ float atomicMinFloat (float * addr, float value) {
-        float old;
-        old = (value >= 0) ? __int_as_float(atomicMin((int *)addr, __float_as_int(value))) :
-             __uint_as_float(atomicMax((unsigned int *)addr, __float_as_uint(value)));
 
-        return old;
-}
+
 
 __global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer,float*  d_depthBuffer,u_int32_t* d_count, int numOfTris) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -439,30 +547,34 @@ __global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenor
     if(idx < numOfTris && d_facenorm[idx] < 0.0f) {
         //(*d_count)++;
 
-        //atomicInc(d_count,*d_count);
+    //atomicInc(d_count,*d_count);
 
-            //get bounding box for current triangle
-            float boxMinX = min(min(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
-            float boxMaxX = max(max(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
+        //get bounding box for current triangle
+        float boxMinX = min(min(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
+        float boxMaxX = max(max(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
 
-            float boxMinY = min(min(d_tris[idx].getP1().y(),d_tris[idx].getP2().y()),d_tris[idx].getP3().y());
-            float boxMaxY = max(max(d_tris[idx].getP1().y(),d_tris[idx].getP2().y()),d_tris[idx].getP3().y());
-    
+        float boxMinY = min(min(d_tris[idx].getP1().y(),d_tris[idx].getP2().y()),d_tris[idx].getP3().y());
+        float boxMaxY = max(max(d_tris[idx].getP1().y(),d_tris[idx].getP2().y()),d_tris[idx].getP3().y());
+
         // Clamp bounding box to screen dimensions if too big
         int xMin = max(0, min(WIDTH - 1, (int)floor(boxMinX)));
         int yMin = max(0, min(HEIGHT - 1, (int)floor(boxMinY)));
         int xMax = max(0, min(WIDTH - 1, (int)floor(boxMaxX)));
         int yMax = max(0, min(HEIGHT - 1, (int)floor(boxMaxY)));
-        
 
-        // Parallelize pixel processing within bounding box
-        for (int y = yMin; y <= yMax; y ++) {
-            for (int x = xMin; x <= xMax; x ++) {
-                float w0 = edgeFunction(d_tris[idx].getP2(), d_tris[idx].getP3(), vec4(x, y, 0.0f, 0.0f));
-                float w1 = edgeFunction(d_tris[idx].getP3(), d_tris[idx].getP1(), vec4(x, y, 0.0f, 0.0f));
-                float w2 = edgeFunction(d_tris[idx].getP1(), d_tris[idx].getP2(), vec4(x, y, 0.0f, 0.0f));
+        vec4 third(0.0f,0.0f,0.0f,0.0f);
+        int counter = 0;
 
-                if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+            for (int y = yMin; y <= yMax; ++y) {
+            for (int x = xMin; x <= xMax; ++x) {
+                third.setx(x);
+                third.sety(y);
+                counter++;
+                float w0 = edgeFunction(d_tris[idx].getP2(), d_tris[idx].getP3(), third);
+                float w1 = edgeFunction(d_tris[idx].getP3(), d_tris[idx].getP1(), third);
+                float w2 = edgeFunction(d_tris[idx].getP1(), d_tris[idx].getP2(), third);
+
+                /*if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f) {
                     // Normalize depth buffer values
                     float depth = (w0 * d_tris[idx].getP1().z() + w1 * d_tris[idx].getP2().z() + w2 * d_tris[idx].getP3().z()) / (w0 + w1 + w2);
                     int index = y * WIDTH + x;
@@ -488,7 +600,7 @@ __global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenor
                         uint32_t color = (A << 24) | (R << 16) | (G << 8) | B;
                         d_frameBuffer[index] = color;
                     }
-                }
+                }*/
             }
         }
     }

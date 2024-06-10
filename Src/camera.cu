@@ -419,10 +419,6 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
     checkCudaErrors (cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
 
-    //frustumCullingK<<<numBlocks, blockSize>>>(vertFOV,horiFOV,this->start,this->end,d_tris,d_facenorm,object.getTriCount());
-    //checkCudaErrors (cudaDeviceSynchronize());
-    //checkCudaErrors(cudaGetLastError());
-    
     checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, object.getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(d_facenorm));
     checkCudaErrors(cudaFree(d_tris));
@@ -462,78 +458,5 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
     d_tris = nullptr;
     d_facenorm = nullptr;
 
-    /*
-    for(int i = 0; i < object.getTriCount(); i++) {
-        //evaluate bound
-        
-        //for top
-        float topBound1 = tan(vertFOV/2) * object[i].getP1().z();// + object[i].getP1().z()/ 60.0);//margin of erro
-        float topBound2 = tan(vertFOV/2) * object[i].getP2().z();// + object[i].getP2().z()/ 60.0);//margin of erro
-        float topBound3 = tan(vertFOV/2) * object[i].getP3().z();// + object[i].getP3().z()/ 60.0);//margin of erro
 
-        float bottomBound1 = -tan(vertFOV/2) * object[i].getP1().z();
-        float bottomBound2 = -tan(vertFOV/2) * obt[ijec].getP2().z();
-        float bottomBound3 = -tan(vertFOV/2) * object[i].getP3().z();
-
-        float rightBound1 = tan(horiFOV/2) * object[i].getP1().z();
-        float rightBound2 = tan(horiFOV/2) * object[i].getP2().z();
-        float rightBound3 = tan(horiFOV/2) * object[i].getP3().z();
-
-        float leftBound1 = -tan(horiFOV/2) * object[i].getP1().z();
-        float leftBound2 = -tan(horiFOV/2) * object[i].getP2().z();
-        float leftBound3 = -tan(horiFOV/2) * object[i].getP3().z();
-
-
-        //change to cull only if all point are out of bounds
-        if((object[i].getP1().y() > topBound1) && (object[i].getP2().y() > topBound2) &&  object[i].getP3().y() > topBound3  ) {//if above frustum cull
-            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-       if( (object[i].getP1().y() < bottomBound1) && (object[i].getP2().y() < bottomBound2) &&  object[i].getP3().y() < bottomBound3  ) {//if below frustum cull
-            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-        if((object[i].getP1().x() > rightBound1) && (object[i].getP2().x() > rightBound2) &&  (object[i].getP3().x() > rightBound3) ) {//if to the right of frustum
-            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-        if((object[i].getP1().x() < leftBound1) && (object[i].getP2().x() < leftBound2) &&  (object[i].getP3().x() < leftBound3)) {//if left of frustum cull
-            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-        if( std::max( std::max(object[i].getP1().z(),
-        (object[i].getP2().z())),
-        (object[i].getP3().z() )) < this->start) {//if too close to frustum
-            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-        if( std::min( std::min(object[i].getP1().z(),
-        (object[i].getP2().z())),
-        (object[i].getP3() ).z())  > 1.0) {//if too far from frustum
-            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
-        
-            //faceRatios[i] = 1.0;
-
-        }
-        
-        
-
-
-    }*/
 }
