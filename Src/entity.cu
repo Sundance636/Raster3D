@@ -379,12 +379,13 @@ __host__ void binTriangles( triangle* trisArray, int numTris, int WIDTH, int HEI
     int numTilesX = (WIDTH + TILE_WIDTH - 1) / TILE_WIDTH;
     int numTilesY = (HEIGHT + TILE_HEIGHT - 1) / TILE_HEIGHT;
 
+
     for (int i = 0; i < numTris; i++) {
-            float minX = std::min(std::min(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
-            float maxX = std::max(std::max(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
-            float minY = std::min(std::min(trisArray[i].getP1().y(),trisArray[i].getP2().y()),trisArray[i].getP3().y());
-            float maxY = std::max(std::max(trisArray[i].getP1().y(),trisArray[i].getP2().y()),trisArray[i].getP3().y());
-            
+        float minX = std::min(std::min(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
+        float maxX = std::max(std::max(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
+        float minY = std::min(std::min(trisArray[i].getP1().y(),trisArray[i].getP2().y()),trisArray[i].getP3().y());
+        float maxY = std::max(std::max(trisArray[i].getP1().y(),trisArray[i].getP2().y()),trisArray[i].getP3().y());
+        
         int startTileX = std::max(0, static_cast<int>(minX / TILE_WIDTH));
         int endTileX = std::min(numTilesX - 1, static_cast<int>(maxX / TILE_WIDTH));
         int startTileY = std::max(0, static_cast<int>(minY / TILE_HEIGHT));
@@ -394,8 +395,11 @@ __host__ void binTriangles( triangle* trisArray, int numTris, int WIDTH, int HEI
             for (int x = startTileX; x <= endTileX; ++x) {
                 int tileIndex = y * numTilesX + x;
 
+                //std::cout << "Index: " << tileIndex << "\nSize: " << numTilesX * numTilesY << "\n";
+                if(tileIndex >=0 && tileIndex < numTilesX * numTilesY) {
+                    tiles[tileIndex].triangleIndices.push_back(i);
+                }
                 
-                tiles[tileIndex].triangleIndices.push_back(i);
             }
         }
     }
@@ -404,8 +408,6 @@ __host__ void binTriangles( triangle* trisArray, int numTris, int WIDTH, int HEI
 
 __global__ void rasterizeTile(int WIDTH, int HEIGHT, triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer, float* d_depthBuffer, int* d_tileTriIndices, int* d_tileTriCounts, int TILE_WIDTH, int TILE_HEIGHT) {
     int tileIdx = blockIdx.x * blockDim.x + threadIdx.x;
-
-
 
     int tileX = tileIdx % (WIDTH / TILE_WIDTH);
     int tileY = tileIdx / (WIDTH / TILE_WIDTH);
@@ -470,8 +472,8 @@ __host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* fr
     int* d_tileTriIndices = nullptr;
     int* d_tileTriCounts = nullptr;
 
-    const int TILE_WIDTH = 16;
-    const int TILE_HEIGHT = 16;
+    const int TILE_WIDTH = 8;
+    const int TILE_HEIGHT = 8;
 
     int numTilesX = (WIDTH + TILE_WIDTH - 1) / TILE_WIDTH;
     int numTilesY = (HEIGHT + TILE_HEIGHT - 1) / TILE_HEIGHT;
@@ -482,6 +484,7 @@ __host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* fr
 
     std::vector<int> tileTriIndices;
     std::vector<int> tileTriCounts(numTilesX * numTilesY * 2);
+
     int currentIndex = 0;
     for (int i = 0; i < tiles.size(); ++i) {
         tileTriCounts[i * 2] = currentIndex;
