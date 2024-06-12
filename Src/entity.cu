@@ -371,6 +371,12 @@ __global__ void frustumCullingK(float vertFOV, float horiFOV, float nearPlane,fl
 
 }
 
+__host__ void entity::applyWave() {
+    for(int i = 0; i < this->getTriCount();i++) {
+        getTriangles()[i].getP1().x();
+    }
+}
+
 struct Tile {
     std::vector<int> triangleIndices;
 };

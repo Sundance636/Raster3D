@@ -30,6 +30,7 @@ class entity {
 
         __host__ __device__ triangle* getTriangles();
         __host__ void depthTest(int WIDTH,int HEIGHT,int &count, u_int32_t* frameBuffer, float* depthBuffer,std::vector<float> facingRatios);
+        __host__ void applyWave();
 
 
 

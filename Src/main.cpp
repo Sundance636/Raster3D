@@ -90,7 +90,7 @@ void mainLoop(SDL_Renderer *renderer) {
     testTriangle.translateEntity(vec4(0.0f,0.0f,200.0f,0.0f));
 
     entity ship;
-    ship.loadObj("Models/cat.obj");
+    ship.loadObj("Models/flatPlane.obj");
     
     ship.scaleEntity(vec4(50.0f,50.0f,50.0f,1.0f));
     ship.translateEntity(vec4(0.0f,0.0f,300.0f,0.0f));
@@ -110,6 +110,7 @@ void mainLoop(SDL_Renderer *renderer) {
 
     u_int32_t* frameBuffer = new u_int32_t[WIDTH * HEIGHT];
     float* depthBuffer = new float[WIDTH * HEIGHT];
+    u_int32_t t = 0; 
     
     while(!gQuit) {
 
@@ -130,7 +131,7 @@ void mainLoop(SDL_Renderer *renderer) {
 
             //Draw(renderer, texture, plane, cam, frameBuffer, depthBuffer);
             //Draw(renderer,texture, testTriangle, cam, frameBuffer,depthBuffer);
-            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer);
+            Draw(renderer, texture, ship, cam, frameBuffer, depthBuffer, t);
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//black background
             SDL_RenderPresent(renderer);
@@ -160,12 +161,15 @@ void mainLoop(SDL_Renderer *renderer) {
 }
 
 
-void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera cam, u_int32_t* frameBuffer, float* depthBuffer) {
+void Draw(SDL_Renderer *renderer, SDL_Texture* texture, entity testTri, camera cam, u_int32_t* frameBuffer, float* depthBuffer, u_int32_t t) {
     int WIDTH = 640;
     int HEIGHT = 480;
     std::vector<float> facingRatios = std::vector<float>(testTri.getTriCount(),0);
 
     entity projection = entity(testTri);
+
+    //apply sine wave
+    projection.wave();
 
     //OPTIMIZE INTO ONE KERNEL CALL  LATER
     cam.viewTransformR(projection);
