@@ -379,7 +379,6 @@ __host__ void binTriangles( triangle* trisArray, int numTris, int WIDTH, int HEI
     int numTilesX = (WIDTH + TILE_WIDTH - 1) / TILE_WIDTH;
     int numTilesY = (HEIGHT + TILE_HEIGHT - 1) / TILE_HEIGHT;
 
-
     for (int i = 0; i < numTris; i++) {
         float minX = std::min(std::min(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
         float maxX = std::max(std::max(trisArray[i].getP1().x(),trisArray[i].getP2().x()),trisArray[i].getP3().x());
