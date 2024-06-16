@@ -1,9 +1,9 @@
 #include "camera.h"
 
 __host__ __device__ camera::camera() {
-    //initialize default camera parameters
-         start = 100;//the near plane of the frustum
-         end = 600;//far plane
+        //initialize default camera parameters
+         start = 50;//the near plane of the frustum
+         end = 6000;//far plane
 
          topPlane = tan(M_PI_4/2.0f) * start;
 
@@ -12,7 +12,6 @@ __host__ __device__ camera::camera() {
          horiFOV = M_PI_4 * (4.0f/3.0f);//magic numbers :(
 
         //frustrum dimensions
-         
         rightPlane = topPlane * (4.0f/3.0f);//4 by 3 aspect ratio
         leftPlane = -rightPlane;
         left = vec4(-1,0,horiFOV/2,0);//just a direction
@@ -24,8 +23,6 @@ __host__ __device__ camera::camera() {
          //topPlane = 200;
          bottomPlane = -topPlane;
 
-        
-
          //initialize camera to origin for now
          position = vec4 (0,0,0,1);
 
@@ -35,8 +32,6 @@ __host__ __device__ camera::camera() {
 
         up = vec4(0,0,1,1);
         upAngle = 0.0f;
-
-
 
 }
 
@@ -54,8 +49,6 @@ __host__ __device__ vec4 camera::perspectiveProjection(vec4 point) {
                 dot_product4(ProjMat[2], point ),
                 dot_product4(ProjMat[3], point ));
 
-
-
     if(newVec.w() != 0.0f) {
         newVec = newVec/newVec.w();
     }
@@ -65,17 +58,14 @@ __host__ __device__ vec4 camera::perspectiveProjection(vec4 point) {
     point.setz(newVec.z());
     point.setw(newVec.w());
 
-    //newVec.sety(-newVec.y());//y orientation it flipped to screen space
-    //newVec.setx(-newVec.x());
-    //newVec.setz(-newVec.z());
-
     return newVec;
 }
 
-__host__ entity camera::perspectiveProjectionR(entity &object) {
+__host__ entity camera::perspectiveProjectionR(std::vector<float> facingRatios, entity &object) {
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
     triangle* d_tris;
+    //float* d_facingRatios;
 
     checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
     checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
@@ -171,8 +161,6 @@ __host__ __device__ vec4 camera::movecam(vec4 nudge) {
 __host__ __device__ vec4 camera::rotateLook(float radians) {
     look.setw(0);
 
-
-
     //look = unit_vector4(look);
     float numerator = dot_product4(look, vec4(0,0,1,0));// straight forward on Z axis
     
@@ -199,14 +187,11 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
             } else {
                 theta = acos(sinval) + radians;
             }
-
-            
             
         }
 
         if(theta >= M_PI) {
-        lookAngle = -(2 * M_PI - theta);
-        //radians = -radians;
+            lookAngle = -(2 * M_PI - theta);
         }
         else if(theta <= -M_PI) {
             lookAngle = 2* M_PI + theta;
@@ -215,18 +200,9 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
             lookAngle = theta;
         }
 
-        
-        
-        //look = unit_vector4(look);
-        //look.setw(1);
-        //look = unit_vector4(look);
-        
         look = vec4(0,0,1,1);
         rotationY(lookAngle,look);//rotate look vec to recalc angle
-        //look = unit_vector4(look);
     }
-
-    
 
     return vec4(0,0,1,0);
 
@@ -235,9 +211,6 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
 __host__ __device__ vec4 camera::rotateUp(float radians) {
     up.setw(0);
 
-
-
-    //look = unit_vector4(look);
     float numerator = dot_product4(up, vec4(0,0,1,0));// straight forward on Z axis
     
     //inital cross product should be zero vec
@@ -263,8 +236,6 @@ __host__ __device__ vec4 camera::rotateUp(float radians) {
             } else {
                 theta = acos(sinval) + radians;
             }
-
-            
             
         }
 
@@ -278,18 +249,10 @@ __host__ __device__ vec4 camera::rotateUp(float radians) {
         else {
             upAngle = theta;
         }
-
-        
-        
-        //look = unit_vector4(look);
-        //look.setw(1);
-        //look = unit_vector4(look);
         
         up = vec4(0,0,1,1);
         rotationX(upAngle,up);//rotate look vec to recalc angle
     }
-
-    
 
     return vec4(0,0,1,0);
 
@@ -314,10 +277,6 @@ __host__ __device__ vec4 camera::getPosition() {
     return this->position;
 }
 
-
-// rewite to take entity and do a batch transformation on all the tris to cam coodinates
-//
-
 __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 
     //pseudo view matrix operations
@@ -334,19 +293,6 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
     //rotate point p
     rotationY(-lookAngle,point);
     rotationX(-upAngle,point);
-    
-
-
-    //translate back
-    //point.setw(1);
-    //translation(position, point);
-
-
-    //translate point relative to the cams position
-    //point.setw(1);
-    //vec4 orientation = vec4(position);
-    //orientation.sety(-position.y());
-    //translation(-1.0f*orientation, point);
 
     return point;
 }
@@ -354,8 +300,6 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 __host__ entity camera::viewTransformR(entity& object) {
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
-    //std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
-    //trisArray[0].setP1(vec4(69,69,69,69));
 
     triangle* d_tris = nullptr;
 
@@ -416,7 +360,7 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 
     cullingK<<<numBlocks, blockSize>>>(this->getPosition(),d_tris,d_facenorm,object.getTriCount()); 
     checkCudaErrors (cudaDeviceSynchronize());
-    checkCudaErrors(cudaGetLastError());    
+    checkCudaErrors(cudaGetLastError());
 
     checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, object.getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaFree(d_facenorm));
@@ -427,77 +371,34 @@ __host__ void camera::faceCulling(std::vector<float>&faceRatios, entity &object)
 }
 
 __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& object) {
-    for(int i = 0; i < object.getTriCount(); i++) {
-        //evaluate bound
-        
-        //for top
-        float topBound1 = tan(vertFOV/2) * object[i].getP1().z();// + object[i].getP1().z()/ 60.0);//margin of erro
-        float topBound2 = tan(vertFOV/2) * object[i].getP2().z();// + object[i].getP2().z()/ 60.0);//margin of erro
-        float topBound3 = tan(vertFOV/2) * object[i].getP3().z();// + object[i].getP3().z()/ 60.0);//margin of erro
 
-        float bottomBound1 = -tan(vertFOV/2) * object[i].getP1().z();
-        float bottomBound2 = -tan(vertFOV/2) * object[i].getP2().z();
-        float bottomBound3 = -tan(vertFOV/2) * object[i].getP3().z();
+    triangle* trisArray = object.getTriangles();//pass vec as an array
+    float* faceArray = faceRatios.data();
 
-        float rightBound1 = tan(horiFOV/2) * object[i].getP1().z();
-        float rightBound2 = tan(horiFOV/2) * object[i].getP2().z();
-        float rightBound3 = tan(horiFOV/2) * object[i].getP3().z();
+    triangle* d_tris = nullptr;
+    float* d_facenorm = nullptr;
 
-        float leftBound1 = -tan(horiFOV/2) * object[i].getP1().z();
-        float leftBound2 = -tan(horiFOV/2) * object[i].getP2().z();
-        float leftBound3 = -tan(horiFOV/2) * object[i].getP3().z();
+    checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
+    checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
+
+    checkCudaErrors(cudaMalloc((void**)&d_facenorm, object.getTriCount() * sizeof(float)));
+    checkCudaErrors(cudaMemcpy(d_facenorm,faceArray, object.getTriCount() * sizeof(float), cudaMemcpyHostToDevice));
 
 
-        //change to cull only if all point are out of bounds
-        if((object[i].getP1().y() > topBound1) && (object[i].getP2().y() > topBound2) &&  object[i].getP3().y() > topBound3  ) {//if above frustum cull
-            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
-        
-            faceRatios[i] = 1.0;
+    //ENSURE THESE TWO NUMBERS ARE OPTIMAL
+    int blockSize = 256;
+    int numBlocks = (object.getTriCount() + blockSize - 1) / blockSize;
+    
 
-        }
-       if( (object[i].getP1().y() < bottomBound1) && (object[i].getP2().y() < bottomBound2) &&  object[i].getP3().y() < bottomBound3  ) {//if below frustum cull
-            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
-        
-            faceRatios[i] = 1.0;
+    frustumCullingK<<<numBlocks, blockSize>>>(vertFOV,horiFOV,this->start,this->end,d_tris,d_facenorm,object.getTriCount());
+    checkCudaErrors (cudaDeviceSynchronize());
+    checkCudaErrors(cudaGetLastError());
+    
+    checkCudaErrors(cudaMemcpy(faceArray, d_facenorm, object.getTriCount() * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaFree(d_facenorm));
+    checkCudaErrors(cudaFree(d_tris));
 
-        }
-        if((object[i].getP1().x() > rightBound1) && (object[i].getP2().x() > rightBound2) &&  (object[i].getP3().x() > rightBound3) ) {//if to the right of frustum
-            //std::cout << "Top Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Top Plane: " << vec4(this->top) << "\n";
-        
-            faceRatios[i] = 1.0;
+    d_tris = nullptr;
+    d_facenorm = nullptr;
 
-        }
-        if((object[i].getP1().x() < leftBound1) && (object[i].getP2().x() < leftBound2) &&  (object[i].getP3().x() < leftBound3)) {//if left of frustum cull
-            //std::cout << "Bottom Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Bottom Plane: " << vec4(this->bottom) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-        if( std::max( std::max(object[i].getP1().z(),
-        (object[i].getP2().z())),
-        (object[i].getP3().z() )) < this->start) {//if too close to frustum
-            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
-        
-            faceRatios[i] = 1.0;
-
-        }
-        if( std::min( std::min(object[i].getP1().z(),
-        (object[i].getP2().z())),
-        (object[i].getP3() ).z())  > 1.0) {//if too far from frustum
-            //std::cout << "Near Culling: " << object[i].getP1() <<  "\n";
-            //std::cout << "Near Plane: " << vec4(this->near) << "\n";
-        
-            //faceRatios[i] = 1.0;
-
-        }
-        
-        
-
-
-    }
 }

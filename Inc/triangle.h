@@ -44,7 +44,7 @@ class triangle {
 
 };
 
-__host__ __device__ float edgeFunction( const vec4 a, const vec4 b, const vec4 c);
+__host__ __device__ float edgeFunction( const vec4& a, const vec4& b, const vec4& c);
 
 
 #endif
