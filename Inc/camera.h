@@ -73,9 +73,6 @@ class camera {
         __host__ __device__ vec4 getPosition();
 
 
-
-
-
 };
 
 __global__ void projectionK(float, float, float, float , float, float, triangle*, int);

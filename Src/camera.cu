@@ -1,8 +1,8 @@
 #include "camera.h"
 
 __host__ __device__ camera::camera() {
-    //initialize default camera parameters
-         start = 100;//the near plane of the frustum
+        //initialize default camera parameters
+         start = 50;//the near plane of the frustum
          end = 6000;//far plane
 
          topPlane = tan(M_PI_4/2.0f) * start;
@@ -12,7 +12,6 @@ __host__ __device__ camera::camera() {
          horiFOV = M_PI_4 * (4.0f/3.0f);//magic numbers :(
 
         //frustrum dimensions
-         
         rightPlane = topPlane * (4.0f/3.0f);//4 by 3 aspect ratio
         leftPlane = -rightPlane;
         left = vec4(-1,0,horiFOV/2,0);//just a direction
@@ -24,8 +23,6 @@ __host__ __device__ camera::camera() {
          //topPlane = 200;
          bottomPlane = -topPlane;
 
-        
-
          //initialize camera to origin for now
          position = vec4 (0,0,0,1);
 
@@ -35,8 +32,6 @@ __host__ __device__ camera::camera() {
 
         up = vec4(0,0,1,1);
         upAngle = 0.0f;
-
-
 
 }
 
@@ -54,8 +49,6 @@ __host__ __device__ vec4 camera::perspectiveProjection(vec4 point) {
                 dot_product4(ProjMat[2], point ),
                 dot_product4(ProjMat[3], point ));
 
-
-
     if(newVec.w() != 0.0f) {
         newVec = newVec/newVec.w();
     }
@@ -65,10 +58,6 @@ __host__ __device__ vec4 camera::perspectiveProjection(vec4 point) {
     point.setz(newVec.z());
     point.setw(newVec.w());
 
-    //newVec.sety(-newVec.y());//y orientation it flipped to screen space
-    //newVec.setx(-newVec.x());
-    //newVec.setz(-newVec.z());
-
     return newVec;
 }
 
@@ -76,7 +65,7 @@ __host__ entity camera::perspectiveProjectionR(std::vector<float> facingRatios, 
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
     triangle* d_tris;
-    float* d_facingRatios;
+    //float* d_facingRatios;
 
     checkCudaErrors(cudaMalloc((void**)&d_tris, object.getTriCount() * sizeof(triangle)));
     checkCudaErrors(cudaMemcpy(d_tris,trisArray, object.getTriCount() * sizeof(triangle), cudaMemcpyHostToDevice));
@@ -172,8 +161,6 @@ __host__ __device__ vec4 camera::movecam(vec4 nudge) {
 __host__ __device__ vec4 camera::rotateLook(float radians) {
     look.setw(0);
 
-
-
     //look = unit_vector4(look);
     float numerator = dot_product4(look, vec4(0,0,1,0));// straight forward on Z axis
     
@@ -200,14 +187,11 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
             } else {
                 theta = acos(sinval) + radians;
             }
-
-            
             
         }
 
         if(theta >= M_PI) {
-        lookAngle = -(2 * M_PI - theta);
-        //radians = -radians;
+            lookAngle = -(2 * M_PI - theta);
         }
         else if(theta <= -M_PI) {
             lookAngle = 2* M_PI + theta;
@@ -216,18 +200,9 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
             lookAngle = theta;
         }
 
-        
-        
-        //look = unit_vector4(look);
-        //look.setw(1);
-        //look = unit_vector4(look);
-        
         look = vec4(0,0,1,1);
         rotationY(lookAngle,look);//rotate look vec to recalc angle
-        //look = unit_vector4(look);
     }
-
-    
 
     return vec4(0,0,1,0);
 
@@ -236,9 +211,6 @@ __host__ __device__ vec4 camera::rotateLook(float radians) {
 __host__ __device__ vec4 camera::rotateUp(float radians) {
     up.setw(0);
 
-
-
-    //look = unit_vector4(look);
     float numerator = dot_product4(up, vec4(0,0,1,0));// straight forward on Z axis
     
     //inital cross product should be zero vec
@@ -264,8 +236,6 @@ __host__ __device__ vec4 camera::rotateUp(float radians) {
             } else {
                 theta = acos(sinval) + radians;
             }
-
-            
             
         }
 
@@ -279,18 +249,10 @@ __host__ __device__ vec4 camera::rotateUp(float radians) {
         else {
             upAngle = theta;
         }
-
-        
-        
-        //look = unit_vector4(look);
-        //look.setw(1);
-        //look = unit_vector4(look);
         
         up = vec4(0,0,1,1);
         rotationX(upAngle,up);//rotate look vec to recalc angle
     }
-
-    
 
     return vec4(0,0,1,0);
 
@@ -315,10 +277,6 @@ __host__ __device__ vec4 camera::getPosition() {
     return this->position;
 }
 
-
-// rewite to take entity and do a batch transformation on all the tris to cam coodinates
-//
-
 __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 
     //pseudo view matrix operations
@@ -335,19 +293,6 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
     //rotate point p
     rotationY(-lookAngle,point);
     rotationX(-upAngle,point);
-    
-
-
-    //translate back
-    //point.setw(1);
-    //translation(position, point);
-
-
-    //translate point relative to the cams position
-    //point.setw(1);
-    //vec4 orientation = vec4(position);
-    //orientation.sety(-position.y());
-    //translation(-1.0f*orientation, point);
 
     return point;
 }
@@ -355,8 +300,6 @@ __host__ __device__ vec4 camera::viewTransform(vec4 point) {
 __host__ entity camera::viewTransformR(entity& object) {
 
     triangle* trisArray = object.getTriangles();//pass vec as an array
-    //std::cout << "tri ref: " << trisArray[0].getP1() << "\n";
-    //trisArray[0].setP1(vec4(69,69,69,69));
 
     triangle* d_tris = nullptr;
 
@@ -457,6 +400,5 @@ __host__ void camera::frustumCulling(std::vector<float>&faceRatios, entity& obje
 
     d_tris = nullptr;
     d_facenorm = nullptr;
-
 
 }

@@ -16,7 +16,5 @@
 void mainLoop(SDL_Renderer*);
 bool Input(entity&, camera&);
 void Draw(SDL_Renderer*, SDL_Texture*, entity, camera, u_int32_t*, float*, u_int32_t);
-void flatShading(SDL_Renderer*, triangle);
-void fillBottom(SDL_Renderer*, vec4*);
-void fillTop(SDL_Renderer*, vec4*);
+
 #endif

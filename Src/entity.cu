@@ -21,16 +21,16 @@ entity::entity(entity &copy) {
     }
 }
 
-__host__ __device__ triangle& entity::operator[](const int index) {
+__host__ triangle& entity::operator[](const int index) {
     return this->tris[index];
 }
 
-__host__ __device__ triangle* entity::getTriangles() {
+__host__ triangle* entity::getTriangles() {
     return this->tris.data();
 }
 
 
-__host__ __device__ void entity::translateEntity(vec4 input) {
+__host__ void entity::translateEntity(vec4 input) {
     triangle* trisArray = &(this->tris[0]);//pass vec as an array
     triangle* d_tris;
 
@@ -52,7 +52,7 @@ __host__ __device__ void entity::translateEntity(vec4 input) {
 
 }
 
-__host__ __device__ void entity::scaleEntity(vec4 scaleFactor) {
+__host__ void entity::scaleEntity(vec4 scaleFactor) {
     triangle* trisArray = &(this->tris[0]);//pass vec as an array
     triangle* d_tris;
 
@@ -160,7 +160,7 @@ __global__ void translationK(vec4 inputVec, triangle* tri, int numOfTris) {
 
 //FINISH REFACTORING ROTATIONS
 //Define kernels that reotate all given tris by the input angle
-__host__ __device__ void entity::rotateEntityX(float angle) {
+__host__ void entity::rotateEntityX(float angle) {
     //vectorize later for cuda
     for(int i = 0; i < triCount; i++ ) {
         
@@ -210,7 +210,7 @@ __global__ void rotationXK(float radians,  triangle* tris, int numOfTris) {
 
 }
 
-__host__ __device__ void entity::rotateEntityY(float angle) {
+__host__ void entity::rotateEntityY(float angle) {
 
     triangle* trisArray = &(this->tris[0]);//pass vec as an array
     triangle* d_tris;
@@ -285,7 +285,6 @@ __global__ void cullingK( vec4 camPosition, triangle* tris, float* facingRatios,
         facingRatios[idx] = dot_product4(tris[idx].getSurfaceNormal(), eyeLine);
 
         
-
     } 
 }
 
@@ -363,9 +362,6 @@ __global__ void frustumCullingK(float vertFOV, float horiFOV, float nearPlane,fl
                 //faceRatios[idx] = 1.0f;
 
             }
-            
-            
-
 
         }
 
@@ -411,59 +407,6 @@ __host__ void binTriangles( triangle* trisArray, int numTris, int WIDTH, int HEI
 }
 
 
-__global__ void rasterizeTile(int WIDTH, int HEIGHT, triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer, float* d_depthBuffer, int* d_tileTriIndices, int* d_tileTriCounts, int TILE_WIDTH, int TILE_HEIGHT) {
-    int tileIdx = blockIdx.x * blockDim.x + threadIdx.x;
-
-    int tileX = tileIdx % (WIDTH / TILE_WIDTH);
-    int tileY = tileIdx / (WIDTH / TILE_WIDTH);
-
-    int xMin = tileX * TILE_WIDTH;
-    int yMin = tileY * TILE_HEIGHT;
-    int xMax = min(WIDTH, (tileX + 1) * TILE_WIDTH);
-    int yMax = min(HEIGHT, (tileY + 1) * TILE_HEIGHT);
-
-    int startTriIdx = d_tileTriCounts[tileIdx * 2];
-    int endTriIdx = d_tileTriCounts[tileIdx * 2 + 1];
-
-    for (int y = yMin; y < yMax; ++y) {
-        for (int x = xMin; x < xMax; ++x) {
-            vec4 third(static_cast<float>(x), static_cast<float>(y), 0.0f, 0.0f);
-
-            for (int i = startTriIdx; i <= endTriIdx; ++i) {
-                int idx = d_tileTriIndices[i];
-                if (d_facenorm[idx] < 0.0f) {
-                    float w0 = edgeFunction(d_tris[idx].getP2(), d_tris[idx].getP3(), third);
-                    float w1 = edgeFunction(d_tris[idx].getP3(), d_tris[idx].getP1(), third);
-                    float w2 = edgeFunction(d_tris[idx].getP1(), d_tris[idx].getP2(), third);
-
-                    if (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f) {
-                        float depth = (w0 * d_tris[idx].getP1().z() + w1 * d_tris[idx].getP2().z() + w2 * d_tris[idx].getP3().z()) / (w0 + w1 + w2);
-                        int index = y * WIDTH + x;
-
-                        if (d_depthBuffer[index] > depth) {
-                            d_depthBuffer[index] = depth;
-
-                            uint32_t col = d_tris[idx].getColour();
-                            uint8_t A = (col >> 24) & 0xFF;
-                            uint8_t R = (col >> 16) & 0xFF;
-                            uint8_t G = (col >> 8) & 0xFF;
-                            uint8_t B = col & 0xFF;
-
-                            R = static_cast<uint8_t>(R * -d_facenorm[idx]);
-                            G = static_cast<uint8_t>(G * -d_facenorm[idx]);
-                            B = static_cast<uint8_t>(B * -d_facenorm[idx]);
-                            A = static_cast<uint8_t>(255 * -d_facenorm[idx]);
-
-                            uint32_t color = (A << 24) | (R << 16) | (G << 8) | B;
-                            d_frameBuffer[index] = color;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 
 __host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* frameBuffer, float* depthBuffer, std::vector<float> faceRatios) {
     triangle* trisArray = this->getTriangles();
@@ -485,6 +428,7 @@ __host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* fr
 
     std::vector<Tile> tiles(numTilesX * numTilesY);
 
+    //each tile has an interecting triangle
     binTriangles(trisArray, this->getTriCount(), WIDTH, HEIGHT, TILE_WIDTH, TILE_HEIGHT, tiles);
 
     std::vector<int> tileTriIndices;
@@ -521,7 +465,7 @@ __host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* fr
     int blockSize = 256;
     int numBlocks = (numTilesX * numTilesY + blockSize - 1) / blockSize;
 
-    rasterizeTile<<<numBlocks, blockSize>>>(WIDTH, HEIGHT, d_tris, d_facenorm, d_frameBuffer, d_depthBuffer, d_tileTriIndices, d_tileTriCounts, TILE_WIDTH, TILE_HEIGHT);
+    hitTestK<<<numBlocks, blockSize>>>(WIDTH, HEIGHT, d_tris, d_facenorm, d_frameBuffer, d_depthBuffer, this->getTriCount());
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
 
@@ -549,13 +493,10 @@ __host__ void entity::depthTest(int WIDTH, int HEIGHT, int &count, u_int32_t* fr
 
 
 
-__global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer,float*  d_depthBuffer,u_int32_t* d_count, int numOfTris) {
+__global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenorm, u_int32_t* d_frameBuffer,float*  d_depthBuffer, int numOfTris) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if(idx < numOfTris && d_facenorm[idx] < 0.0f) {
-        //(*d_count)++;
-
-    //atomicInc(d_count,*d_count);
 
         //get bounding box for current triangle
         float boxMinX = min(min(d_tris[idx].getP1().x(),d_tris[idx].getP2().x()),d_tris[idx].getP3().x());
@@ -615,8 +556,7 @@ __global__ void hitTestK(int WIDTH,int HEIGHT,triangle* d_tris, float* d_facenor
 }
 
 
-
-__host__ __device__ void entity::rotateEntityZ(float angle) {
+__host__ void entity::rotateEntityZ(float angle) {
     //vectorize later for cuda
     for(int i = 0; i < triCount; i++ ) {
         
@@ -651,8 +591,6 @@ __host__ void entity::loadObj(std::string file) {
         objFile.getline(line, 128);
 
         std::basic_stringstream<char> stream;
-        
-
 
         stream << line;
 
@@ -678,27 +616,14 @@ __host__ void entity::loadObj(std::string file) {
             stream >> face[1];
                         stream.ignore(128, ' ');
             stream >> face[2];
-            //stream.ignore(128, ' ');
             triangles.push_back(triangle(vertices[ face[0] - 1],vertices[ face[1] - 1],vertices[ face[2] - 1]));
 
         }
     }
     
-
     this->tris = triangles;
     this->triCount = triangles.size();
 
-/*
-    for(int i = 0; i < triCount;i++ ) {
-        std::cout << (getTriangles()[i].getP1()) << "\n";
-        std::cout << (getTriangles()[i].getP2()) << "\n";
-        std::cout << (getTriangles()[i].getP3()) << "\n";
-
-    }
-
-*/
-
     std::cout << "Loaded Model: " << triangles.size() << " Triangles.\n";
 
-    
 }
